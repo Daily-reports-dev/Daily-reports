@@ -412,28 +412,90 @@
     .age-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: var(--spacing-xs);
+      gap: 6px;
       padding: var(--spacing-md);
     }
 
-    .age-btn {
-      position: relative;
-      padding: 12px 4px;
-      border: 1px solid var(--border-light);
-      border-radius: var(--radius-md);
+    .age-group-block {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
       background: var(--bg-secondary);
-      cursor: pointer;
-      transition: all 0.2s;
+      border-radius: var(--radius-md);
+      padding: 6px 4px;
+      border: 1px solid var(--border-light);
+    }
+
+    .age-group-label {
+      font-size: 11px;
+      font-weight: 800;
       text-align: center;
+      color: var(--text-primary);
+      padding-bottom: 3px;
+      border-bottom: 1px solid var(--border-light);
+      margin-bottom: 2px;
     }
 
-    .age-btn:hover {
-      background: var(--primary-light);
-      transform: scale(0.98);
+    /* Gender counter row */
+    .gender-counter {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-radius: 6px;
+      overflow: hidden;
+      height: 28px;
+      border: 1px solid;
     }
 
-    .age-btn:active {
-      transform: scale(0.95);
+    .gender-counter.male { border-color: rgba(24,95,165,0.35); background: rgba(24,95,165,0.06); }
+    .gender-counter.female { border-color: rgba(163,45,45,0.35); background: rgba(163,45,45,0.06); }
+
+    .gc-btn {
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      font-size: 15px;
+      font-weight: 700;
+      line-height: 1;
+      width: 24px;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s;
+      flex-shrink: 0;
+    }
+
+    .gender-counter.male .gc-btn { color: #185FA5; }
+    .gender-counter.female .gc-btn { color: #A32D2D; }
+    .gender-counter.male .gc-btn:hover { background: rgba(24,95,165,0.18); }
+    .gender-counter.female .gc-btn:hover { background: rgba(163,45,45,0.18); }
+    .gc-btn:active { opacity: 0.7; }
+
+    .gc-label {
+      font-size: 9px;
+      font-weight: 700;
+      flex: 1;
+      text-align: center;
+      line-height: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1px;
+    }
+
+    .gender-counter.male .gc-label { color: #185FA5; }
+    .gender-counter.female .gc-label { color: #A32D2D; }
+
+    .gc-count {
+      font-size: 14px;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .gc-sex {
+      font-size: 8px;
+      opacity: 0.75;
     }
 
     .age-label {
@@ -1218,14 +1280,18 @@
                   <div class="age-group-block">
                     <div class="age-group-label">${age.label}</div>
                     ${GENDERS.map(g => `
-                      <button class="age-btn ${g.id}" 
-                        data-disease="${disease.id}" data-age="${age.id}" data-gender="${g.id}"
-                        onclick="addRecord('${disease.id}', '${age.id}', '${g.id}')"
-                        title="${age.label} - ${age.sub} - ${g.label}"
-                        style="padding:8px 4px;border-color:${g.color}33">
-                        <span class="age-label" style="font-size:11px;color:${g.color}">${g.label}</span>
-                        <span class="badge" id="badge-${disease.id}-${age.id}-${g.id}" style="display:none;background:${g.color}">0</span>
-                      </button>
+                      <div class="gender-counter ${g.id}">
+                        <button class="gc-btn"
+                          onclick="addRecord('${disease.id}','${age.id}','${g.id}')"
+                          title="زیادکردن">+</button>
+                        <div class="gc-label">
+                          <span class="gc-count" id="badge-${disease.id}-${age.id}-${g.id}">٠</span>
+                          <span class="gc-sex">${g.id === 'male' ? '♂' : '♀'}</span>
+                        </div>
+                        <button class="gc-btn"
+                          onclick="removeRecord('${disease.id}','${age.id}','${g.id}')"
+                          title="کەمکردنەوە">−</button>
+                      </div>
                     `).join('')}
                   </div>
                 `).join('')}
@@ -1274,17 +1340,27 @@
       });
 
       return Object.values(grouped).map(group => `
-        <div class="log-item">
+        <div class="log-item" id="logitem-${group.disease.id}-${group.ageGroup.id}-${group.gender.id}">
           <div class="log-item-info">
             <span class="log-dot" style="background:${group.disease.color}"></span>
             <div class="log-details">
               <h4>${group.disease.icon} ${group.disease.name}</h4>
-              <p>${group.ageGroup.label} - ${group.ageGroup.sub} · <span style="color:${group.gender.id==='male'?'#185FA5':'#A32D2D'}">${group.gender.label}</span></p>
+              <p>${group.ageGroup.label} (${group.ageGroup.sub}) ·
+                <span style="color:${group.gender.id==='male'?'#185FA5':'#A32D2D'}">
+                  ${group.gender.id==='male'?'♂ نێر':'♀ مێ'}
+                </span>
+              </p>
             </div>
           </div>
-          <div class="log-actions">
-            <span class="log-count">${group.count}</span>
-            <button class="delete-btn" onclick="deleteLastRecord('${group.disease.id}', '${group.ageGroup.id}', '${group.gender.id}')" title="سڕینەوە">🗑️</button>
+          <div class="log-actions" style="gap:8px">
+            <button class="gc-btn" style="width:30px;height:30px;border-radius:8px;border:1px solid var(--border-medium);font-size:18px;color:var(--primary)"
+              onclick="addRecord('${group.disease.id}','${group.ageGroup.id}','${group.gender.id}')">+</button>
+            <span class="log-count" style="min-width:28px;text-align:center">${group.count}</span>
+            <button class="gc-btn" style="width:30px;height:30px;border-radius:8px;border:1px solid var(--border-medium);font-size:18px;color:var(--danger)"
+              onclick="removeRecord('${group.disease.id}','${group.ageGroup.id}','${group.gender.id}')">−</button>
+            <button class="delete-btn"
+              onclick="deleteAllRecords('${group.disease.id}','${group.ageGroup.id}','${group.gender.id}')"
+              title="سڕینەوەی هەموو">🗑️</button>
           </div>
         </div>
       `).join('');
@@ -1627,25 +1703,23 @@
     };
 
     function updateBadge(diseaseId, ageGroupId, gender) {
-      const count = todayRecords.filter(r => 
+      const count = todayRecords.filter(r =>
         r.disease === diseaseId && r.ageGroup === ageGroupId && r.gender === gender
       ).length;
 
-      const badge = document.getElementById(`badge-${diseaseId}-${ageGroupId}-${gender}`);
-      if (badge) {
-        if (count > 0) {
-          badge.textContent = count;
-          badge.style.display = 'flex';
-        } else {
-          badge.style.display = 'none';
-        }
+      const countEl = document.getElementById(`badge-${diseaseId}-${ageGroupId}-${gender}`);
+      if (countEl) {
+        // Convert to Eastern Arabic numerals
+        countEl.textContent = count.toString().replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
+        countEl.style.fontWeight = count > 0 ? '900' : '700';
+        countEl.style.opacity = count > 0 ? '1' : '0.4';
       }
 
       // Update disease total
       const diseaseTotal = todayRecords.filter(r => r.disease === diseaseId).length;
       const totalEl = document.getElementById(`total-${diseaseId}`);
       if (totalEl) {
-        totalEl.textContent = diseaseTotal;
+        totalEl.textContent = diseaseTotal.toString().replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
       }
     }
 
@@ -1664,6 +1738,15 @@
       if (recentLogs) {
         recentLogs.innerHTML = renderRecentLogs();
       }
+
+      // Refresh all card badges
+      DISEASES.forEach(disease => {
+        AGE_GROUPS.forEach(age => {
+          GENDERS.forEach(g => {
+            updateBadge(disease.id, age.id, g.id);
+          });
+        });
+      });
     }
 
     function checkAlertThresholds(diseaseId) {
@@ -1679,7 +1762,83 @@
       }
     }
 
+    // Delete ALL records of a group
+    window.deleteAllRecords = async function(diseaseId, ageGroupId, gender) {
+      const toDelete = todayRecords.filter(r =>
+        r.disease === diseaseId && r.ageGroup === ageGroupId && r.gender === gender
+      );
+      if (toDelete.length === 0) return;
+
+      const disease = DISEASES.find(d => d.id === diseaseId);
+      const age = AGE_GROUPS.find(a => a.id === ageGroupId);
+      const gLabel = gender === 'male' ? '♂ نێر' : '♀ مێ';
+
+      showModal('دڵنیابوونەوە', `
+        <p style="margin-bottom:16px">دەتەوێت هەموو <strong>${toDelete.length}</strong> تۆماری
+        <strong>${disease.name} · ${age.label} · ${gLabel}</strong> بسرێیتەوە؟</p>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-primary" style="background:var(--danger)"
+            onclick="confirmDeleteAll('${diseaseId}','${ageGroupId}','${gender}');closeModal()">
+            🗑️ بەڵێ، بیسرەوە
+          </button>
+          <button class="btn" onclick="closeModal()">نەخێر</button>
+        </div>
+      `);
+    };
+
+    window.confirmDeleteAll = async function(diseaseId, ageGroupId, gender) {
+      const toDelete = todayRecords.filter(r =>
+        r.disease === diseaseId && r.ageGroup === ageGroupId && r.gender === gender
+      );
+      try {
+        await Promise.all(toDelete.map(r => deleteDoc(doc(db, 'daily_records', r.id))));
+        todayRecords = todayRecords.filter(r =>
+          !(r.disease === diseaseId && r.ageGroup === ageGroupId && r.gender === gender)
+        );
+        weekRecords = weekRecords.filter(r =>
+          !(r.disease === diseaseId && r.ageGroup === ageGroupId && r.gender === gender)
+        );
+        updateBadge(diseaseId, ageGroupId, gender);
+        updateTodayLog();
+        updateStats();
+        showToast('✓ هەموو تۆمارەکان سڕانەوە', 'success');
+      } catch(e) {
+        showToast('هەڵە لە سڕینەوە', 'error');
+      }
+    }; = async function(diseaseId, ageGroupId, gender) {
+      const recordsToDelete = todayRecords
+        .filter(r => r.disease === diseaseId && r.ageGroup === ageGroupId && r.gender === gender)
+        .slice(-1);
+
+      if (recordsToDelete.length === 0) return;
+
+      try {
+        await deleteDoc(doc(db, 'daily_records', recordsToDelete[0].id));
+        todayRecords = todayRecords.filter(r => r.id !== recordsToDelete[0].id);
+        weekRecords = weekRecords.filter(r => r.id !== recordsToDelete[0].id);
+
+        updateBadge(diseaseId, ageGroupId, gender);
+        updateTodayLog();
+        updateStats();
+        showToast('− کەمکرایەوە', 'success');
+      } catch (error) {
+        showToast('هەڵە لە سڕینەوە', 'error');
+      }
+    };
+
     function initDailyInteractions() {
+      // Set all counters to zero first
+      DISEASES.forEach(disease => {
+        AGE_GROUPS.forEach(age => {
+          GENDERS.forEach(g => {
+            const el = document.getElementById(`badge-${disease.id}-${age.id}-${g.id}`);
+            if (el) { el.textContent = '٠'; el.style.opacity = '0.4'; }
+          });
+        });
+        const totalEl = document.getElementById(`total-${disease.id}`);
+        if (totalEl) totalEl.textContent = '٠';
+      });
+      // Then fill with real counts
       todayRecords.forEach(record => {
         updateBadge(record.disease, record.ageGroup, record.gender);
       });
@@ -2018,6 +2177,9 @@
     window.exportWeekly = exportWeekly;
     window.showQuickEntryModal = showQuickEntryModal;
     window.quickAddRecords = quickAddRecords;
+    window.removeRecord = removeRecord;
+    window.deleteAllRecords = deleteAllRecords;
+    window.confirmDeleteAll = confirmDeleteAll;
 
     // Initial render
     renderCurrentPage();

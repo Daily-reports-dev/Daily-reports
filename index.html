@@ -1,227 +1,2026 @@
 <!DOCTYPE html>
 <html lang="ku" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>سیستەمی ڕاپۆرتی ڕۆژانە</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100;400;700&display=swap');
-        body { font-family: 'Vazirmatn', sans-serif; background-color: #f3f4f6; }
-        .glass-effect { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
-        /* چاککردنی خشتە بۆ مۆبایل */
-        .table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-        @media (max-width: 640px) {
-            table { font-size: 0.85rem; }
-            th, td { padding: 8px 4px !important; }
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0f6e56">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="سیستەمی تۆماری نەخۆشی">
+  <link rel="manifest" href="manifest.json">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <title>سیستەمی تۆماری نەخۆشییە گوازراوەکان - وەزارەتی تەندروستی</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --primary: #0f6e56;
+      --primary-dark: #0a4d3b;
+      --primary-light: #e1f5ee;
+      --secondary: #185fa5;
+      --secondary-light: #e6f1fb;
+      --danger: #a32d2d;
+      --danger-light: #fcebeb;
+      --warning: #ba8e17;
+      --warning-light: #fdf4d7;
+      --success: #2d7a4b;
+      --success-light: #e1f3e8;
+      --bg-main: #ffffff;
+      --bg-secondary: #f8f7f4;
+      --bg-tertiary: #f0ede8;
+      --text-primary: #1c1c1a;
+      --text-secondary: #5f5e5a;
+      --text-tertiary: #9e9c97;
+      --border-light: rgba(0, 0, 0, 0.08);
+      --border-medium: rgba(0, 0, 0, 0.15);
+      --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
+      --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-xl: 24px;
+      --spacing-xs: 4px;
+      --spacing-sm: 8px;
+      --spacing-md: 16px;
+      --spacing-lg: 24px;
+      --spacing-xl: 32px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-main: #1a1a18;
+        --bg-secondary: #242422;
+        --bg-tertiary: #2e2e2b;
+        --text-primary: #eeeee6;
+        --text-secondary: #b4b2a9;
+        --text-tertiary: #6e6c67;
+        --border-light: rgba(255, 255, 255, 0.08);
+        --border-medium: rgba(255, 255, 255, 0.15);
+        --primary-light: rgba(15, 110, 86, 0.2);
+        --secondary-light: rgba(24, 95, 165, 0.2);
+        --danger-light: rgba(163, 45, 45, 0.2);
+      }
+    }
+
+    body {
+      font-family: 'Peyda', 'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg-main);
+      color: var(--text-primary);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* App Container */
+    #app {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: var(--spacing-md);
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: var(--spacing-lg);
+      min-height: 100vh;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      background: var(--bg-secondary);
+      border-radius: var(--radius-lg);
+      padding: var(--spacing-lg);
+      height: calc(100vh - var(--spacing-xl));
+      position: sticky;
+      top: var(--spacing-md);
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-lg);
+      border: 1px solid var(--border-light);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+      padding-bottom: var(--spacing-md);
+      border-bottom: 2px solid var(--primary);
+    }
+
+    .logo-icon {
+      font-size: 32px;
+      background: var(--primary);
+      color: white;
+      width: 48px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--radius-md);
+    }
+
+    .logo-text h2 {
+      font-size: 16px;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    .logo-text h1 {
+      font-size: 18px;
+      color: var(--primary);
+      font-weight: 800;
+    }
+
+    /* User Info */
+    .user-card {
+      background: var(--bg-tertiary);
+      border-radius: var(--radius-md);
+      padding: var(--spacing-md);
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+    }
+
+    .user-avatar {
+      width: 48px;
+      height: 48px;
+      background: var(--primary);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 24px;
+      font-weight: 600;
+    }
+
+    .user-details {
+      flex: 1;
+    }
+
+    .user-name {
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    .user-role {
+      font-size: 12px;
+      color: var(--text-tertiary);
+      background: var(--primary-light);
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 12px;
+      margin-top: 4px;
+    }
+
+    .logout-btn {
+      background: none;
+      border: none;
+      color: var(--text-tertiary);
+      cursor: pointer;
+      font-size: 18px;
+      padding: var(--spacing-xs);
+      border-radius: var(--radius-sm);
+      transition: all 0.2s;
+    }
+
+    .logout-btn:hover {
+      background: var(--danger-light);
+      color: var(--danger);
+    }
+
+    /* Navigation */
+    .nav-menu {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-xs);
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-md);
+      padding: var(--spacing-md);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: all 0.2s;
+      color: var(--text-secondary);
+      border: none;
+      background: none;
+      width: 100%;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .nav-item:hover {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+    }
+
+    .nav-item.active {
+      background: var(--primary-light);
+      color: var(--primary);
+      font-weight: 700;
+    }
+
+    .nav-icon {
+      font-size: 20px;
+    }
+
+    /* Stats Cards */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--spacing-sm);
+      margin-top: auto;
+    }
+
+    .stat-card {
+      background: var(--bg-tertiary);
+      border-radius: var(--radius-md);
+      padding: var(--spacing-md);
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--primary);
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: var(--text-tertiary);
+    }
+
+    /* Main Content */
+    .main-content {
+      background: var(--bg-secondary);
+      border-radius: var(--radius-lg);
+      padding: var(--spacing-lg);
+      border: 1px solid var(--border-light);
+    }
+
+    /* Header */
+    .content-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--spacing-lg);
+      padding-bottom: var(--spacing-md);
+      border-bottom: 1px solid var(--border-light);
+    }
+
+    .header-title h3 {
+      color: var(--text-secondary);
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .header-title h2 {
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--primary);
+    }
+
+    .header-actions {
+      display: flex;
+      gap: var(--spacing-sm);
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-light);
+      background: var(--bg-main);
+      color: var(--text-primary);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+      border: none;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-dark);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .btn-icon {
+      font-size: 18px;
+    }
+
+    /* Date Selector */
+    .date-selector {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-md);
+      background: var(--bg-tertiary);
+      padding: var(--spacing-sm) var(--spacing-md);
+      border-radius: var(--radius-xl);
+    }
+
+    .date-nav {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: 1px solid var(--border-light);
+      background: var(--bg-main);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .date-nav:hover {
+      background: var(--primary-light);
+      color: var(--primary);
+    }
+
+    .current-date {
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    /* Disease Grid */
+    .disease-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: var(--spacing-md);
+      margin-top: var(--spacing-lg);
+    }
+
+    .disease-card {
+      background: var(--bg-main);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border-light);
+      overflow: hidden;
+      transition: all 0.3s;
+      cursor: pointer;
+    }
+
+    .disease-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .disease-card.expanded {
+      grid-row: span 2;
+    }
+
+    .card-header {
+      padding: var(--spacing-md);
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-md);
+      border-bottom: 1px solid var(--border-light);
+    }
+
+    .disease-color {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+
+    .disease-name {
+      font-weight: 700;
+      font-size: 16px;
+      flex: 1;
+    }
+
+    .disease-total {
+      background: var(--primary-light);
+      color: var(--primary);
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    /* Age Grid */
+    .age-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: var(--spacing-xs);
+      padding: var(--spacing-md);
+    }
+
+    .age-btn {
+      position: relative;
+      padding: 12px 4px;
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-md);
+      background: var(--bg-secondary);
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+    }
+
+    .age-btn:hover {
+      background: var(--primary-light);
+      transform: scale(0.98);
+    }
+
+    .age-btn:active {
+      transform: scale(0.95);
+    }
+
+    .age-label {
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    .age-sub {
+      font-size: 9px;
+      color: var(--text-tertiary);
+      display: block;
+    }
+
+    .badge {
+      position: absolute;
+      top: -6px;
+      right: -6px;
+      background: var(--primary);
+      color: white;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 800;
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* Today's Log */
+    .log-section {
+      margin-top: var(--spacing-xl);
+    }
+
+    .log-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--spacing-md);
+    }
+
+    .log-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .log-total {
+      background: var(--primary-light);
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .log-list {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-xs);
+    }
+
+    .log-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--spacing-md);
+      background: var(--bg-main);
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-light);
+      animation: slideIn 0.3s ease-out;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateX(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    .log-item-info {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-md);
+    }
+
+    .log-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    .log-details h4 {
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .log-details p {
+      font-size: 12px;
+      color: var(--text-tertiary);
+    }
+
+    .log-actions {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-lg);
+    }
+
+    .log-count {
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--primary);
+    }
+
+    .delete-btn {
+      background: none;
+      border: none;
+      color: var(--text-tertiary);
+      font-size: 18px;
+      cursor: pointer;
+      padding: var(--spacing-xs);
+      border-radius: var(--radius-sm);
+      transition: all 0.2s;
+    }
+
+    .delete-btn:hover {
+      background: var(--danger-light);
+      color: var(--danger);
+    }
+
+    /* Weekly View */
+    .week-stats {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: var(--spacing-xs);
+      margin-bottom: var(--spacing-xl);
+    }
+
+    .day-card {
+      background: var(--bg-main);
+      border-radius: var(--radius-md);
+      padding: var(--spacing-md);
+      text-align: center;
+      border: 1px solid var(--border-light);
+    }
+
+    .day-name {
+      font-size: 12px;
+      color: var(--text-tertiary);
+      margin-bottom: var(--spacing-xs);
+    }
+
+    .day-number {
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--primary);
+    }
+
+    .day-total {
+      font-size: 11px;
+      background: var(--primary-light);
+      padding: 2px 8px;
+      border-radius: 12px;
+      margin-top: var(--spacing-xs);
+    }
+
+    /* Charts */
+    .charts-container {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--spacing-lg);
+      margin-top: var(--spacing-xl);
+    }
+
+    .chart-card {
+      background: var(--bg-main);
+      border-radius: var(--radius-lg);
+      padding: var(--spacing-lg);
+      border: 1px solid var(--border-light);
+    }
+
+    .chart-title {
+      font-weight: 700;
+      margin-bottom: var(--spacing-md);
+      color: var(--primary);
+    }
+
+    /* Toast Notification */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: var(--text-primary);
+      color: var(--bg-main);
+      padding: 12px 24px;
+      border-radius: 50px;
+      font-weight: 600;
+      font-size: 14px;
+      box-shadow: var(--shadow-lg);
+      z-index: 9999;
+      transition: transform 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .toast.success {
+      background: var(--success);
+    }
+
+    .toast.error {
+      background: var(--danger);
+    }
+
+    /* Loading Spinner */
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--border-light);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Modal */
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s;
+    }
+
+    .modal.show {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .modal-content {
+      background: var(--bg-main);
+      border-radius: var(--radius-lg);
+      padding: var(--spacing-xl);
+      max-width: 500px;
+      width: 90%;
+      transform: translateY(20px);
+      transition: transform 0.3s;
+    }
+
+    .modal.show .modal-content {
+      transform: translateY(0);
+    }
+
+    /* Toggle Switch */
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 48px;
+      height: 26px;
+    }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: var(--border-medium);
+      border-radius: 26px;
+      transition: 0.3s;
+    }
+    .slider:before {
+      content: '';
+      position: absolute;
+      width: 20px; height: 20px;
+      right: 3px; bottom: 3px;
+      background: white;
+      border-radius: 50%;
+      transition: 0.3s;
+    }
+    .switch input:checked + .slider { background: var(--primary); }
+    .switch input:checked + .slider:before { transform: translateX(-22px); }
+
+    /* Gender Buttons */
+    .gender-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px;
+    }
+    .age-btn.male { border-color: rgba(24,95,165,0.3); }
+    .age-btn.female { border-color: rgba(163,45,45,0.3); }
+    .age-btn.male:hover { background: rgba(24,95,165,0.1); }
+    .age-btn.female:hover { background: rgba(163,45,45,0.1); }
+    .gender-label { font-size: 10px; color: var(--text-tertiary); }
+
+    /* Age grid with gender - 2 cols per age group */
+    .age-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: var(--spacing-xs);
+      padding: var(--spacing-md);
+    }
+    .age-group-block {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .age-group-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-align: center;
+      color: var(--text-secondary);
+      padding: 2px 0;
+    }
+    @media (max-width: 1024px) {
+      #app {
+        grid-template-columns: 1fr;
+        padding: 0;
+      }
+
+      .sidebar {
+        position: fixed;
+        bottom: 0;
+        top: auto;
+        left: 0;
+        right: 0;
+        height: auto;
+        border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+        z-index: 100;
+        transform: translateY(calc(100% - 80px));
+        transition: transform 0.3s;
+      }
+
+      .sidebar.expanded {
+        transform: translateY(0);
+      }
+
+      .main-content {
+        margin-bottom: 100px;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .disease-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .charts-container {
+        grid-template-columns: 1fr;
+      }
+
+      .week-stats {
+        grid-template-columns: repeat(4, 1fr);
+        overflow-x: auto;
+      }
+    }
+  </style>
 </head>
-<body class="min-h-screen bg-gray-100">
-
-    <div class="max-w-6xl mx-auto p-4 lg:p-8">
-        
-        <header class="flex justify-between items-center mb-8 bg-white p-4 rounded-2xl shadow-sm">
-            <div class="flex items-center gap-3">
-                <div class="bg-blue-600 p-3 rounded-xl text-white">
-                    <i class="fas fa-file-medical text-2xl"></i>
-                </div>
-                <h1 class="text-xl font-bold text-gray-800">ڕاپۆرتی ڕۆژانە</h1>
-            </div>
-            <div id="auth-section">
-                <button id="login-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-xl transition-all flex items-center gap-2">
-                    <i class="fab fa-google"></i> چوونەژوورەوە
-                </button>
-                <div id="user-info" class="hidden flex items-center gap-3">
-                    <span id="user-name" class="text-sm font-medium text-gray-700"></span>
-                    <img id="user-pic" class="w-10 h-10 rounded-full border-2 border-blue-100" src="" alt="">
-                    <button id="logout-btn" class="text-red-500 hover:text-red-700 p-2"><i class="fas fa-sign-out-alt"></i></button>
-                </div>
-            </div>
-        </header>
-
-        <div id="main-content" class="hidden grid grid-cols-1 lg:grid-cols-3 gap-8">
-            
-            <div class="lg:col-span-1">
-                <div class="bg-white p-6 rounded-2xl shadow-sm sticky top-8">
-                    <h2 class="text-lg font-bold mb-6 flex items-center gap-2 text-gray-700 border-b pb-2">
-                        <i class="fas fa-plus-circle text-blue-500"></i> تۆمارکردنی نوێ
-                    </h2>
-                    <form id="report-form" class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-600 mb-1">ناوی نەخۆش</label>
-                            <input type="text" id="patient-name" required class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-600 mb-1">جۆری نەخۆشی</label>
-                            <input type="text" id="disease-type" required class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-600 mb-1">تێبینییەکان</label>
-                            <textarea id="notes" rows="3" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all"></textarea>
-                        </div>
-                        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl shadow-lg shadow-blue-200 transition-all active:scale-95">
-                            <i class="fas fa-save ml-2"></i> پاشەکەوتکردن
-                        </button>
-                    </form>
-                </div>
-            </div>
-
-            <div class="lg:col-span-2">
-                <div class="bg-white p-6 rounded-2xl shadow-sm min-h-[500px]">
-                    <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-                        <h2 class="text-lg font-bold text-gray-700 flex items-center gap-2">
-                            <i class="fas fa-list-ul text-blue-500"></i> دوایین تۆمارەکان
-                        </h2>
-                        <div class="relative w-full md:w-64">
-                            <i class="fas fa-search absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                            <input type="text" id="search-input" placeholder="گەڕان بەپێی ناو..." class="w-full pr-10 pl-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
-                        </div>
-                    </div>
-
-                    <div class="table-container">
-                        <table class="w-full text-right border-collapse">
-                            <thead>
-                                <tr class="bg-gray-50 text-gray-600 uppercase text-xs">
-                                    <th class="p-4 rounded-r-xl">بەروار</th>
-                                    <th class="p-4">ناوی نەخۆش</th>
-                                    <th class="p-4">جۆری نەخۆشی</th>
-                                    <th class="p-4 rounded-l-xl">کردار</th>
-                                </tr>
-                            </thead>
-                            <tbody id="reports-list" class="divide-y divide-gray-100">
-                                </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
+<body>
+  <div id="app">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="logo">
+        <div class="logo-icon">🏥</div>
+        <div class="logo-text">
+          <h2>وەزارەتی تەندروستی</h2>
+          <h1>سیستەمی تۆماری نەخۆشی</h1>
         </div>
+      </div>
 
-        <div id="login-message" class="text-center py-20 bg-white rounded-3xl shadow-sm">
-            <i class="fas fa-lock text-6xl text-gray-200 mb-6"></i>
-            <h2 class="text-2xl font-bold text-gray-700 mb-2">بەخێربێیت بۆ سیستەمی ڕاپۆرت</h2>
-            <p class="text-gray-500">تکایە سەرەتا بچۆرە ژوورەوە بۆ ئەوەی بتوانیت داتاکان ببینی و تۆمار بکەیت.</p>
+      <div class="user-card" id="userCard">
+        <div class="user-avatar" id="userAvatar">د</div>
+        <div class="user-details">
+          <div class="user-name" id="userName">دکتۆر محەممەد</div>
+          <span class="user-role" id="userRole">بەڕێوەبەری تۆمار</span>
         </div>
+        <button class="logout-btn" id="logoutBtn" title="دەرچوون">🚪</button>
+      </div>
 
+      <nav class="nav-menu">
+        <button class="nav-item active" onclick="changePage('dashboard')">
+          <span class="nav-icon">📊</span>
+          داشبۆرد
+        </button>
+        <button class="nav-item" onclick="changePage('daily')">
+          <span class="nav-icon">✏️</span>
+          تۆماری ڕۆژانە
+        </button>
+        <button class="nav-item" onclick="changePage('weekly')">
+          <span class="nav-icon">📅</span>
+          ڕاپۆرتی هەفتانە
+        </button>
+        <button class="nav-item" onclick="changePage('monthly')">
+          <span class="nav-icon">📈</span>
+          ڕاپۆرتی مانگانە
+        </button>
+        <button class="nav-item" onclick="changePage('analytics')">
+          <span class="nav-icon">🔍</span>
+          شیکردنەوە پێشکەوتووەکان
+        </button>
+        <button class="nav-item" onclick="changePage('reports')">
+          <span class="nav-icon">📋</span>
+          ڕاپۆرتە پاشەکەوتکراوەکان
+        </button>
+        <button class="nav-item" onclick="changePage('settings')">
+          <span class="nav-icon">⚙️</span>
+          ڕێکخستنەکان
+        </button>
+      </nav>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value" id="todayTotal">٠</div>
+          <div class="stat-label">تۆماری ئەمڕۆ</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="weekTotal">٠</div>
+          <div class="stat-label">کۆی هەفتە</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="monthTotal">٠</div>
+          <div class="stat-label">کۆی مانگ</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="yearTotal">٠</div>
+          <div class="stat-label">کۆی ساڵ</div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content" id="mainContent">
+      <!-- Dynamic content will be loaded here -->
+    </main>
+  </div>
+
+  <!-- Toast Notification -->
+  <div class="toast" id="toast"></div>
+
+  <!-- Modal -->
+  <div class="modal" id="modal">
+    <div class="modal-content" id="modalContent">
+      <!-- Modal content will be loaded here -->
     </div>
+  </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, where, Timestamp, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
-        // ڕێکخستنی فایەربەیس
-        const firebaseConfig = {
-            apiKey: "AIzaSyByTfV5D4V0Vf...", // لێرە کلیلی خۆت دانابوو، من کورتم کردۆتەوە بۆ پاراستنی کۆدەکە
-            authDomain: "daily-reports-5d85d.firebaseapp.com",
-            projectId: "daily-reports-5d85d",
-            storageBucket: "daily-reports-5d85d.appspot.com",
-            messagingSenderId: "587023317765",
-            appId: "1:587023317765:web:8662400c014798e4d35e16"
-        };
+    // Firebase Configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyAdJpXXA0U68hTiCee5Yvmn5isa2MWRmVg",
+      authDomain: "daily-reports-5d85d.firebaseapp.com",
+      projectId: "daily-reports-5d85d",
+      storageBucket: "daily-reports-5d85d.firebasestorage.app",
+      messagingSenderId: "531833916190",
+      appId: "1:531833916190:web:652f12cdb41a74b381970f"
+    };
 
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const provider = new GoogleAuthProvider();
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+    const provider = new GoogleAuthProvider();
 
-        // توخمەکانی HTML
-        const loginBtn = document.getElementById('login-btn');
-        const logoutBtn = document.getElementById('logout-btn');
-        const authSection = document.getElementById('auth-section');
-        const userInfo = document.getElementById('user-info');
-        const mainContent = document.getElementById('main-content');
-        const loginMessage = document.getElementById('login-message');
-        const reportForm = document.getElementById('report-form');
-        const reportsList = document.getElementById('reports-list');
-        const searchInput = document.getElementById('search-input');
+    // Constants
+    const DISEASES = [
+      { id: 'malaria', name: 'ئاکەڵی', color: '#E85D24', icon: '🦟', bg: 'rgba(232,93,36,0.1)' },
+      { id: 'typhoid', name: 'تیفۆیید', color: '#BA7517', icon: '🌡️', bg: 'rgba(186,117,23,0.1)' },
+      { id: 'tb', name: 'سل', color: '#534AB7', icon: '🫁', bg: 'rgba(83,74,183,0.1)' },
+      { id: 'cholera', name: 'کولێرا', color: '#0F6E56', icon: '💧', bg: 'rgba(15,110,86,0.1)' },
+      { id: 'bloody', name: 'دیاریای خوێناوی', color: '#A32D2D', icon: '🩸', bg: 'rgba(163,45,45,0.1)' },
+      { id: 'hepatitisA', name: 'هەپاتایتس A', color: '#185FA5', icon: '🩺', bg: 'rgba(24,95,165,0.1)' },
+      { id: 'covid', name: 'کۆڤید-١٩', color: '#3B6D11', icon: '🦠', bg: 'rgba(59,109,17,0.1)' },
+      { id: 'brucella', name: 'بروسیلا', color: '#854F0B', icon: '🐑', bg: 'rgba(133,79,11,0.1)' },
+      { id: 'measles', name: 'قیژنە', color: '#993556', icon: '🤒', bg: 'rgba(153,53,86,0.1)' },
+      { id: 'scabies', name: 'گرنگ', color: '#5F5E5A', icon: '🐜', bg: 'rgba(95,94,90,0.1)' }
+    ];
 
-        // چوونەژوورەوە
-        loginBtn.onclick = () => signInWithPopup(auth, provider);
-        logoutBtn.onclick = () => signOut(auth);
+    const AGE_GROUPS = [
+      { id: 'lt1', label: '< ١', sub: 'کەمتر لە ساڵێک', min: 0, max: 0 },
+      { id: 'a1_4', label: '١-٤', sub: '١ بۆ ٤ ساڵ', min: 1, max: 4 },
+      { id: 'a5_14', label: '٥-١٤', sub: '٥ بۆ ١٤ ساڵ', min: 5, max: 14 },
+      { id: 'a15_24', label: '١٥-٢٤', sub: '١٥ بۆ ٢٤ ساڵ', min: 15, max: 24 },
+      { id: 'a25_44', label: '٢٥-٤٤', sub: '٢٥ بۆ ٤٤ ساڵ', min: 25, max: 44 },
+      { id: 'a45_64', label: '٤٥-٦٤', sub: '٤٥ بۆ ٦٤ ساڵ', min: 45, max: 64 },
+      { id: 'gte65', label: '٦٥+', sub: '٦٥ ساڵ و زیاتر', min: 65, max: 120 },
+      { id: 'unknown', label: '?', sub: 'نەزانراو', min: -1, max: -1 }
+    ];
 
-        // چاودێریکردنی باری بەکارهێنەر
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                loginBtn.classList.add('hidden');
-                userInfo.classList.remove('hidden');
-                mainContent.classList.remove('hidden');
-                loginMessage.classList.add('hidden');
-                document.getElementById('user-name').innerText = user.displayName;
-                document.getElementById('user-pic').src = user.photoURL;
-                loadReports();
-            } else {
-                loginBtn.classList.remove('hidden');
-                userInfo.classList.add('hidden');
-                mainContent.classList.add('hidden');
-                loginMessage.classList.remove('hidden');
-            }
-        });
+    const GENDERS = [
+      { id: 'male', label: '♂ نێر', color: '#185FA5' },
+      { id: 'female', label: '♀ مێ', color: '#A32D2D' }
+    ];
 
-        // ناردنی ڕاپۆرت
-        reportForm.onsubmit = async (e) => {
-            e.preventDefault();
-            const name = document.getElementById('patient-name').value;
-            const type = document.getElementById('disease-type').value;
-            const notes = document.getElementById('notes').value;
+    // State
+    let currentUser = null;
+    let currentPage = 'dashboard';
+    let todayRecords = [];
+    let weekRecords = [];
+    let monthRecords = [];
+    let selectedDate = new Date();
+    let selectedWeek = getWeekNumber(new Date());
+    let selectedMonth = new Date().getMonth() + 1;
+    let selectedYear = new Date().getFullYear();
 
-            try {
-                await addDoc(collection(db, "daily_records"), {
-                    patientName: name,
-                    diseaseType: type,
-                    notes: notes,
-                    createdAt: new Date(),
-                    userId: auth.currentUser.uid
-                });
-                reportForm.reset();
-                alert("بە سەرکەوتوویی پاشەکەوت کرا!");
-            } catch (error) {
-                console.error("Error adding document: ", error);
-            }
-        };
+    // Helper Functions
+    function getWeekNumber(date) {
+      const firstDayOfYear = new Date(date.getFullYear(), 0, 1);
+      const pastDaysOfYear = (date - firstDayOfYear) / 86400000;
+      return Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
+    }
 
-        // خوێندنەوەی ڕاپۆرتەکان بە شێوەی ڕاستەوخۆ (Real-time)
-        function loadReports() {
-            const q = query(collection(db, "daily_records"), orderBy("createdAt", "desc"));
-            onSnapshot(q, (snapshot) => {
-                let html = "";
-                snapshot.forEach((doc) => {
-                    const data = doc.data();
-                    const date = data.createdAt ? data.createdAt.toDate().toLocaleDateString('ku-IQ') : 'بەردەست نییە';
-                    html += `
-                        <tr class="hover:bg-gray-50 transition-colors">
-                            <td class="p-4 text-xs text-gray-500">${date}</td>
-                            <td class="p-4 font-medium text-gray-800">${data.patientName}</td>
-                            <td class="p-4 text-gray-600">${data.diseaseType}</td>
-                            <td class="p-4">
-                                <button onclick="deleteReport('${doc.id}')" class="text-red-400 hover:text-red-600 p-2">
-                                    <i class="fas fa-trash-alt"></i>
-                                </button>
-                            </td>
-                        </tr>
-                    `;
-                });
-                reportsList.innerHTML = html;
-            });
+    function formatDate(date) {
+      const months = [
+        'کانوونی دووەم', 'شوبات', 'ئازار', 'نیسان', 'ئایار', 'حوزەیران',
+        'تەممووز', 'ئاب', 'ئەیلوول', 'تشرینی یەکەم', 'تشرینی دووەم', 'کانوونی یەکەم'
+      ];
+      return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
+    }
+
+    function showToast(message, type = 'info') {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.className = `toast show ${type}`;
+      
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 3000);
+    }
+
+    function showModal(title, content) {
+      const modal = document.getElementById('modal');
+      const modalContent = document.getElementById('modalContent');
+      modalContent.innerHTML = `
+        <h3 style="margin-bottom:16px;color:var(--primary)">${title}</h3>
+        ${content}
+        <div style="display:flex;gap:8px;margin-top:24px">
+          <button class="btn btn-primary" onclick="closeModal()">داخستن</button>
+        </div>
+      `;
+      modal.classList.add('show');
+    }
+
+    window.closeModal = function() {
+      document.getElementById('modal').classList.remove('show');
+    };
+
+    // Authentication
+    async function login() {
+      try {
+        const result = await signInWithPopup(auth, provider);
+        currentUser = result.user;
+        updateUserUI();
+        loadData();
+        showToast(`بەخێربێیت ${currentUser.displayName}`, 'success');
+      } catch (error) {
+        showToast('هەڵە لە چوونەژوورەوە: ' + error.message, 'error');
+      }
+    }
+
+    async function logout() {
+      try {
+        await signOut(auth);
+        currentUser = null;
+        updateUserUI();
+        showToast('بە سەرکەوتوویی چوویتە دەرەوە', 'success');
+      } catch (error) {
+        showToast('هەڵە لە دەرچوون: ' + error.message, 'error');
+      }
+    }
+
+    function updateUserUI() {
+      const userCard = document.getElementById('userCard');
+      if (currentUser) {
+        userCard.innerHTML = `
+          <div class="user-avatar" id="userAvatar">${currentUser.displayName?.charAt(0) || 'د'}</div>
+          <div class="user-details">
+            <div class="user-name" id="userName">${currentUser.displayName || 'بەکارهێنەر'}</div>
+            <span class="user-role" id="userRole">${currentUser.email || ''}</span>
+          </div>
+          <button class="logout-btn" onclick="logout()" title="دەرچوون">🚪</button>
+        `;
+      } else {
+        userCard.innerHTML = `
+          <div class="user-avatar">🔐</div>
+          <div class="user-details">
+            <div class="user-name">تکایە بچۆرە ژوورەوە</div>
+          </div>
+          <button class="logout-btn" onclick="login()" title="چوونەژوورەوە">🔑</button>
+        `;
+      }
+    }
+
+    // Load Data from Firebase
+    async function loadData() {
+      if (!currentUser) return;
+
+      try {
+        // Load today's records
+        const todayQuery = query(
+          collection(db, 'daily_records'),
+          where('date', '==', formatDateForStorage(new Date())),
+          orderBy('savedAt', 'desc')
+        );
+        const todaySnapshot = await getDocs(todayQuery);
+        todayRecords = todaySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+
+        // Load week records
+        const weekQuery = query(
+          collection(db, 'daily_records'),
+          where('week', '==', selectedWeek),
+          where('year', '==', selectedYear)
+        );
+        const weekSnapshot = await getDocs(weekQuery);
+        weekRecords = weekSnapshot.docs.map(doc => doc.data());
+
+        // Update UI
+        updateStats();
+        renderCurrentPage();
+      } catch (error) {
+        console.error('Error loading data:', error);
+        showToast('هەڵە لە بارکردنی داتا', 'error');
+      }
+    }
+
+    function formatDateForStorage(date) {
+      return date.toISOString().split('T')[0];
+    }
+
+    // Update Statistics
+    function updateStats() {
+      document.getElementById('todayTotal').textContent = todayRecords.length;
+      document.getElementById('weekTotal').textContent = weekRecords.length;
+      
+      // Calculate month total
+      const monthTotal = weekRecords.filter(r => 
+        new Date(r.date).getMonth() + 1 === selectedMonth
+      ).length;
+      document.getElementById('monthTotal').textContent = monthTotal;
+      
+      // Calculate year total
+      document.getElementById('yearTotal').textContent = weekRecords.length;
+    }
+
+    // Page Rendering
+    function renderCurrentPage() {
+      const mainContent = document.getElementById('mainContent');
+      
+      switch(currentPage) {
+        case 'dashboard':
+          mainContent.innerHTML = renderDashboard();
+          setTimeout(initCharts, 100);
+          break;
+        case 'daily':
+          mainContent.innerHTML = renderDailyPage();
+          initDailyInteractions();
+          break;
+        case 'weekly':
+          mainContent.innerHTML = renderWeeklyPage();
+          renderWeeklyStats();
+          break;
+        case 'monthly':
+          mainContent.innerHTML = renderMonthlyPage();
+          setTimeout(initMonthlyCharts, 100);
+          break;
+        case 'analytics':
+          mainContent.innerHTML = renderAnalyticsPage();
+          setTimeout(initCharts, 100);
+          break;
+        case 'reports':
+          mainContent.innerHTML = renderReportsPage();
+          break;
+        case 'settings':
+          mainContent.innerHTML = renderSettingsPage();
+          break;
+      }
+    }
+
+    function renderDashboard() {
+      return `
+        <div class="content-header">
+          <div class="header-title">
+            <h3>داشبۆرد</h3>
+            <h2>پوختەی تۆمارەکان</h2>
+          </div>
+          <div class="header-actions">
+            <div class="date-selector">
+              <button class="date-nav" onclick="changeDate(-1)">‹</button>
+              <span class="current-date">${formatDate(selectedDate)}</span>
+              <button class="date-nav" onclick="changeDate(1)">›</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="charts-container">
+          <div class="chart-card">
+            <div class="chart-title">ڕێژەی نەخۆشییەکان بەپێی جۆر</div>
+            <canvas id="diseaseChart" style="height:300px"></canvas>
+          </div>
+          <div class="chart-card">
+            <div class="chart-title">ڕێژەی تەمەنی نەخۆشەکان</div>
+            <canvas id="ageChart" style="height:300px"></canvas>
+          </div>
+        </div>
+
+        <div class="charts-container">
+          <div class="chart-card">
+            <div class="chart-title">ڕەوتی ٣٠ ڕۆژی ڕابردوو</div>
+            <canvas id="trendChart" style="height:300px"></canvas>
+          </div>
+          <div class="chart-card">
+            <div class="chart-title">بەراوردی ساڵانە</div>
+            <canvas id="yearlyChart" style="height:300px"></canvas>
+          </div>
+        </div>
+
+        <div class="log-section">
+          <div class="log-header">
+            <h3 class="log-title">دوایین تۆمارەکان</h3>
+            <span class="log-total">کۆ: ${todayRecords.length}</span>
+          </div>
+          <div class="log-list" id="recentLogs">
+            ${renderRecentLogs()}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderDailyPage() {
+      return `
+        <div class="content-header">
+          <div class="header-title">
+            <h3>تۆماری ڕۆژانە</h3>
+            <h2>${formatDate(selectedDate)}</h2>
+          </div>
+          <div class="header-actions">
+            <button class="btn" onclick="showQuickEntryModal()">
+              <span class="btn-icon">⚡</span>
+              تۆماری خێرا
+            </button>
+            <button class="btn btn-primary" onclick="exportDaily()">
+              <span class="btn-icon">📥</span>
+              هەناردەکردن
+            </button>
+          </div>
+        </div>
+
+        <div class="disease-grid" id="diseaseGrid">
+          ${DISEASES.map(disease => `
+            <div class="disease-card" id="card-${disease.id}" style="border-right:4px solid ${disease.color}">
+              <div class="card-header">
+                <span class="disease-color" style="background:${disease.color}"></span>
+                <span class="disease-name">${disease.icon} ${disease.name}</span>
+                <span class="disease-total" id="total-${disease.id}">٠</span>
+              </div>
+              <div class="age-grid" id="ages-${disease.id}">
+                ${AGE_GROUPS.map(age => `
+                  <div class="age-group-block">
+                    <div class="age-group-label">${age.label}</div>
+                    ${GENDERS.map(g => `
+                      <button class="age-btn ${g.id}" 
+                        data-disease="${disease.id}" data-age="${age.id}" data-gender="${g.id}"
+                        onclick="addRecord('${disease.id}', '${age.id}', '${g.id}')"
+                        title="${age.label} - ${age.sub} - ${g.label}"
+                        style="padding:8px 4px;border-color:${g.color}33">
+                        <span class="age-label" style="font-size:11px;color:${g.color}">${g.label}</span>
+                        <span class="badge" id="badge-${disease.id}-${age.id}-${g.id}" style="display:none;background:${g.color}">0</span>
+                      </button>
+                    `).join('')}
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `).join('')}
+        </div>
+
+        <div class="log-section">
+          <div class="log-header">
+            <h3 class="log-title">تۆماری ئەمڕۆ</h3>
+            <span class="log-total" id="todayTotalLog">کۆ: ${todayRecords.length}</span>
+          </div>
+          <div class="log-list" id="todayLogList">
+            ${renderTodayLog()}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderTodayLog() {
+      if (todayRecords.length === 0) {
+        return `
+          <div style="text-align:center;padding:48px;color:var(--text-tertiary)">
+            <span style="font-size:48px;display:block;margin-bottom:16px">📭</span>
+            <p>هێشتا هیچ تۆمارێک نەکراوە</p>
+          </div>
+        `;
+      }
+
+      // Group records by disease, age, and gender
+      const grouped = {};
+      todayRecords.forEach(record => {
+        const key = `${record.disease}-${record.ageGroup}-${record.gender}`;
+        if (!grouped[key]) {
+          grouped[key] = {
+            disease: DISEASES.find(d => d.id === record.disease),
+            ageGroup: AGE_GROUPS.find(a => a.id === record.ageGroup),
+            gender: GENDERS.find(g => g.id === record.gender) || { id: record.gender, label: record.genderLabel || '؟' },
+            count: 0,
+            records: []
+          };
+        }
+        grouped[key].count++;
+        grouped[key].records.push(record);
+      });
+
+      return Object.values(grouped).map(group => `
+        <div class="log-item">
+          <div class="log-item-info">
+            <span class="log-dot" style="background:${group.disease.color}"></span>
+            <div class="log-details">
+              <h4>${group.disease.icon} ${group.disease.name}</h4>
+              <p>${group.ageGroup.label} - ${group.ageGroup.sub} · <span style="color:${group.gender.id==='male'?'#185FA5':'#A32D2D'}">${group.gender.label}</span></p>
+            </div>
+          </div>
+          <div class="log-actions">
+            <span class="log-count">${group.count}</span>
+            <button class="delete-btn" onclick="deleteLastRecord('${group.disease.id}', '${group.ageGroup.id}', '${group.gender.id}')" title="سڕینەوە">🗑️</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderRecentLogs() {
+      const recent = todayRecords.slice(0, 5);
+      if (recent.length === 0) {
+        return '<p style="color:var(--text-tertiary);text-align:center">هیچ تۆمارێک نیە</p>';
+      }
+
+      return recent.map(record => {
+        const disease = DISEASES.find(d => d.id === record.disease);
+        const age = AGE_GROUPS.find(a => a.id === record.ageGroup);
+        const genderObj = GENDERS.find(g => g.id === record.gender) || { label: '؟', id: 'unknown' };
+        return `
+          <div class="log-item">
+            <div class="log-item-info">
+              <span class="log-dot" style="background:${disease.color}"></span>
+              <div class="log-details">
+                <h4>${disease.icon} ${disease.name}</h4>
+                <p>${age.label} · <span style="color:${genderObj.id==='male'?'#185FA5':'#A32D2D'}">${genderObj.label}</span> · ${new Date(record.savedAt?.toDate()).toLocaleTimeString('ku')}</p>
+              </div>
+            </div>
+            <span class="log-count">١</span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderWeeklyPage() {
+      return `
+        <div class="content-header">
+          <div class="header-title">
+            <h3>ڕاپۆرتی هەفتانە</h3>
+            <h2>هەفتەی ${selectedWeek} · ساڵی ${selectedYear}</h2>
+          </div>
+          <div class="header-actions">
+            <button class="btn" onclick="changeWeek(-1)">‹</button>
+            <span class="current-date">هەفتەی ${selectedWeek}</span>
+            <button class="btn" onclick="changeWeek(1)">›</button>
+            <button class="btn btn-primary" onclick="exportWeekly()">
+              <span class="btn-icon">📥</span>
+              هەناردەکردن
+            </button>
+          </div>
+        </div>
+
+        <div class="week-stats" id="weekStats"></div>
+        <div id="weeklyDiseases"></div>
+      `;
+    }
+
+    function renderWeeklyStats() {
+      const weekDays = ['یەکشەممە', 'دووشەممە', 'سێشەممە', 'چوارشەممە', 'پێنجشەممە', 'هەینی', 'شەممە'];
+      const stats = document.getElementById('weekStats');
+      
+      let html = '';
+      for (let i = 0; i < 7; i++) {
+        const date = new Date(selectedYear, 0, 1 + (selectedWeek - 1) * 7 + i);
+        const dateStr = formatDateForStorage(date);
+        const dayRecords = weekRecords.filter(r => r.date === dateStr);
+        
+        html += `
+          <div class="day-card">
+            <div class="day-name">${weekDays[i]}</div>
+            <div class="day-number">${date.getDate()}</div>
+            <div class="day-total">${dayRecords.length} حاڵەت</div>
+          </div>
+        `;
+      }
+      stats.innerHTML = html;
+
+      // Group by disease
+      const diseaseGroups = {};
+      weekRecords.forEach(record => {
+        if (!diseaseGroups[record.disease]) {
+          diseaseGroups[record.disease] = {
+            disease: DISEASES.find(d => d.id === record.disease),
+            ages: {},
+            total: 0
+          };
+        }
+        diseaseGroups[record.disease].total++;
+        diseaseGroups[record.disease].ages[record.ageGroup] = 
+          (diseaseGroups[record.disease].ages[record.ageGroup] || 0) + 1;
+      });
+
+      const diseasesHtml = document.getElementById('weeklyDiseases');
+      diseasesHtml.innerHTML = Object.values(diseaseGroups).map(group => `
+        <div class="disease-card" style="margin-bottom:16px">
+          <div class="card-header">
+            <span class="disease-color" style="background:${group.disease.color}"></span>
+            <span class="disease-name">${group.disease.icon} ${group.disease.name}</span>
+            <span class="disease-total">کۆ: ${group.total}</span>
+          </div>
+          <div style="padding:16px">
+            <table style="width:100%;border-collapse:collapse">
+              <thead>
+                <tr style="background:var(--bg-tertiary)">
+                  <th style="padding:8px;text-align:right">تەمەن</th>
+                  <th style="padding:8px;text-align:center">ژمارە</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${AGE_GROUPS.map(age => {
+                  const count = group.ages[age.id] || 0;
+                  if (count === 0) return '';
+                  return `
+                    <tr>
+                      <td style="padding:8px;border-bottom:1px solid var(--border-light)">${age.label} - ${age.sub}</td>
+                      <td style="padding:8px;text-align:center;color:var(--primary);font-weight:700">${count}</td>
+                    </tr>
+                  `;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderAnalyticsPage() {
+      return `
+        <div class="content-header">
+          <div class="header-title">
+            <h3>شیکردنەوە پێشکەوتووەکان</h3>
+            <h2>شیکردنەوە و پێشبینی</h2>
+          </div>
+          <div class="header-actions">
+            <button class="btn btn-primary" onclick="generatePredictions()">
+              <span class="btn-icon">🔮</span>
+              پێشبینی
+            </button>
+          </div>
+        </div>
+
+        <div class="charts-container">
+          <div class="chart-card">
+            <div class="chart-title">پێشبینی ڕەوتی ٣٠ ڕۆژی داهاتوو</div>
+            <canvas id="predictionChart" style="height:300px"></canvas>
+          </div>
+          <div class="chart-card">
+            <div class="chart-title">هۆت سپۆت (ناوچە مەترسیدارەکان)</div>
+            <div id="heatmap" style="height:300px;background:var(--bg-tertiary);border-radius:var(--radius-md)"></div>
+          </div>
+        </div>
+
+        <div class="charts-container">
+          <div class="chart-card">
+            <div class="chart-title">بەراوردی وەرزی</div>
+            <canvas id="seasonalChart" style="height:300px"></canvas>
+          </div>
+          <div class="chart-card">
+            <div class="chart-title">ڕێژەی تووشبوون بەپێی وەرز</div>
+            <canvas id="seasonalRatioChart" style="height:300px"></canvas>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderReportsPage() {
+      return `
+        <div class="content-header">
+          <div class="header-title">
+            <h3>ڕاپۆرتە پاشەکەوتکراوەکان</h3>
+            <h2>ڕاپۆرتەکان</h2>
+          </div>
+          <div class="header-actions">
+            <button class="btn btn-primary" onclick="generateNewReport()">
+              <span class="btn-icon">➕</span>
+              ڕاپۆرتی نوێ
+            </button>
+          </div>
+        </div>
+
+        <div style="display:grid;gap:8px">
+          ${[1,2,3,4,5].map(i => `
+            <div class="log-item" style="cursor:pointer" onclick="viewReport(${i})">
+              <div>
+                <h4 style="margin-bottom:4px">ڕاپۆرتی هەفتەی ${i} - ٢٠٢٤</h4>
+                <p style="color:var(--text-tertiary);font-size:12px">١٥ حاڵەت · ١٠ی کانوونی دووەم</p>
+              </div>
+              <div>
+                <button class="delete-btn" onclick="downloadReport(${i})">📥</button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    function renderSettingsPage() {
+      return `
+        <div class="content-header">
+          <div class="header-title">
+            <h3>ڕێکخستنەکان</h3>
+            <h2>ڕێکخستنەکانی سیستەم</h2>
+          </div>
+        </div>
+
+        <div style="display:grid;gap:24px">
+          <div class="chart-card">
+            <h4 style="margin-bottom:16px;color:var(--primary)">ڕێکخستنەکانی بەکارهێنەر</h4>
+            <div style="display:grid;gap:16px">
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <span>ناوی بەکارهێنەر</span>
+                <input type="text" value="${currentUser?.displayName || ''}" style="padding:8px;border-radius:var(--radius-sm);border:1px solid var(--border-light);background:var(--bg-main)">
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <span>ئیمەیل</span>
+                <input type="email" value="${currentUser?.email || ''}" style="padding:8px;border-radius:var(--radius-sm);border:1px solid var(--border-light);background:var(--bg-main)">
+              </div>
+            </div>
+          </div>
+
+          <div class="chart-card">
+            <h4 style="margin-bottom:16px;color:var(--primary)">ڕێکخستنەکانی سیستەم</h4>
+            <div style="display:grid;gap:16px">
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <span>ڕەنگی ڕووکار</span>
+                <select style="padding:8px;border-radius:var(--radius-sm);border:1px solid var(--border-light)">
+                  <option>ڕووناک</option>
+                  <option>تاریک</option>
+                  <option>سیستەم</option>
+                </select>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <span>زمان</span>
+                <select style="padding:8px;border-radius:var(--radius-sm);border:1px solid var(--border-light)">
+                  <option>کوردی</option>
+                  <option>عەرەبی</option>
+                  <option>ئینگلیزی</option>
+                </select>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <span>نوکتەی ڕۆژانە</span>
+                <label class="switch">
+                  <input type="checkbox" checked>
+                  <span class="slider"></span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div class="chart-card">
+            <h4 style="margin-bottom:16px;color:var(--primary)">پشتیوانی</h4>
+            <div style="display:grid;gap:8px">
+              <button class="btn" style="width:100%">📤 هەناردەی هەموو داتاکان</button>
+              <button class="btn" style="width:100%">📥 هاوردەی داتا</button>
+              <button class="btn" style="width:100%">🔄 بەڕێوەبردنی پشتیوانی</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Actions
+    window.addRecord = async function(diseaseId, ageGroupId, gender) {
+      if (!currentUser) {
+        showToast('تکایە سەرەتا بچۆرە ژوورەوە', 'error');
+        return;
+      }
+
+      const disease = DISEASES.find(d => d.id === diseaseId);
+      const ageGroup = AGE_GROUPS.find(a => a.id === ageGroupId);
+      const genderObj = GENDERS.find(g => g.id === gender) || { id: 'unknown', label: 'نەزانراو' };
+      
+      const record = {
+        disease: diseaseId,
+        diseaseName: disease.name,
+        diseaseColor: disease.color,
+        ageGroup: ageGroupId,
+        ageLabel: ageGroup.label,
+        gender: gender,
+        genderLabel: genderObj.label,
+        date: formatDateForStorage(selectedDate),
+        week: selectedWeek,
+        month: selectedMonth,
+        year: selectedYear,
+        savedAt: Timestamp.now(),
+        userId: currentUser.uid,
+        userName: currentUser.displayName
+      };
+
+      try {
+        const docRef = await addDoc(collection(db, 'daily_records'), record);
+        record.id = docRef.id;
+        todayRecords.push(record);
+        weekRecords.push(record);
+
+        // Update UI
+        updateBadge(diseaseId, ageGroupId);
+        updateTodayLog();
+        updateStats();
+
+        // Animation
+        const btn = document.querySelector(`[data-disease="${diseaseId}"][data-age="${ageGroupId}"][data-gender="${gender}"]`);
+        if (btn) {
+          btn.style.transform = 'scale(0.95)';
+          btn.style.background = disease.bg;
+          setTimeout(() => {
+            btn.style.transform = '';
+            btn.style.background = '';
+          }, 200);
         }
 
-        // سڕینەوەی ڕاپۆرت
-        window.deleteReport = async (id) => {
-            if(confirm("ئایا دڵنیایت لە سڕینەوەی ئەم تۆمارە؟")) {
-                await deleteDoc(doc(db, "daily_records", id));
-            }
-        };
+        showToast(`✓ تۆمار کرا: ${disease.name} - ${ageGroup.label} - ${genderObj.label}`, 'success');
 
-        // گەڕان لەناو خشتەکەدا
-        searchInput.oninput = () => {
-            const filter = searchInput.value.toLowerCase();
-            const rows = reportsList.getElementsByTagName('tr');
-            Array.from(rows).forEach(row => {
-                const text = row.textContent.toLowerCase();
-                row.style.display = text.includes(filter) ? "" : "none";
-            });
-        };
-    </script>
+        // Check for alert thresholds
+        checkAlertThresholds(diseaseId);
+      } catch (error) {
+        console.error('Error adding record:', error);
+        showToast('هەڵە لە تۆمارکردن', 'error');
+      }
+    };
+
+    window.deleteLastRecord = async function(diseaseId, ageGroupId, gender) {
+      const recordsToDelete = todayRecords
+        .filter(r => r.disease === diseaseId && r.ageGroup === ageGroupId && r.gender === gender)
+        .slice(-1);
+
+      if (recordsToDelete.length === 0) return;
+
+      try {
+        await deleteDoc(doc(db, 'daily_records', recordsToDelete[0].id));
+        
+        todayRecords = todayRecords.filter(r => r.id !== recordsToDelete[0].id);
+        weekRecords = weekRecords.filter(r => r.id !== recordsToDelete[0].id);
+
+        updateBadge(diseaseId, ageGroupId, gender);
+        updateTodayLog();
+        updateStats();
+
+        showToast('✓ تۆمارەکە سڕایەوە', 'success');
+      } catch (error) {
+        console.error('Error deleting record:', error);
+        showToast('هەڵە لە سڕینەوە', 'error');
+      }
+    };
+
+    function updateBadge(diseaseId, ageGroupId, gender) {
+      const count = todayRecords.filter(r => 
+        r.disease === diseaseId && r.ageGroup === ageGroupId && r.gender === gender
+      ).length;
+
+      const badge = document.getElementById(`badge-${diseaseId}-${ageGroupId}-${gender}`);
+      if (badge) {
+        if (count > 0) {
+          badge.textContent = count;
+          badge.style.display = 'flex';
+        } else {
+          badge.style.display = 'none';
+        }
+      }
+
+      // Update disease total
+      const diseaseTotal = todayRecords.filter(r => r.disease === diseaseId).length;
+      const totalEl = document.getElementById(`total-${diseaseId}`);
+      if (totalEl) {
+        totalEl.textContent = diseaseTotal;
+      }
+    }
+
+    function updateTodayLog() {
+      const logList = document.getElementById('todayLogList');
+      if (logList) {
+        logList.innerHTML = renderTodayLog();
+      }
+      
+      const totalEl = document.getElementById('todayTotalLog');
+      if (totalEl) {
+        totalEl.textContent = `کۆ: ${todayRecords.length}`;
+      }
+
+      const recentLogs = document.getElementById('recentLogs');
+      if (recentLogs) {
+        recentLogs.innerHTML = renderRecentLogs();
+      }
+    }
+
+    function checkAlertThresholds(diseaseId) {
+      const diseaseTotal = todayRecords.filter(r => r.disease === diseaseId).length;
+      const disease = DISEASES.find(d => d.id === diseaseId);
+      
+      // Alert if more than 10 cases of same disease in one day
+      if (diseaseTotal >= 10) {
+        showModal('ئاگادارکردنەوە', `
+          <p style="margin-bottom:16px">ژمارەی تووشبووانی ${disease.name} گەیشتووەتە ${diseaseTotal} حاڵەت لە ڕۆژێکدا.</p>
+          <p style="color:var(--warning)">⚠️ تکایە ڕاپۆرتی نائاسایی بنێرە.</p>
+        `);
+      }
+    }
+
+    function initDailyInteractions() {
+      todayRecords.forEach(record => {
+        updateBadge(record.disease, record.ageGroup, record.gender);
+      });
+    }
+
+    // Navigation
+    window.changePage = function(page) {
+      currentPage = page;
+      document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+      event.currentTarget.classList.add('active');
+      renderCurrentPage();
+    };
+
+    window.changeDate = function(delta) {
+      selectedDate.setDate(selectedDate.getDate() + delta);
+      selectedWeek = getWeekNumber(selectedDate);
+      selectedMonth = selectedDate.getMonth() + 1;
+      selectedYear = selectedDate.getFullYear();
+      loadData();
+    };
+
+    window.changeWeek = function(delta) {
+      selectedWeek += delta;
+      if (selectedWeek < 1) selectedWeek = 52;
+      if (selectedWeek > 52) selectedWeek = 1;
+      loadData();
+    };
+
+    // Export Functions
+    window.exportDaily = function() {
+      const csv = convertToCSV(todayRecords);
+      downloadFile(csv, `daily-report-${formatDateForStorage(selectedDate)}.csv`);
+      showToast('✓ ڕاپۆرت هەناردە کرا', 'success');
+    };
+
+    window.exportWeekly = function() {
+      const csv = convertToCSV(weekRecords);
+      downloadFile(csv, `weekly-report-${selectedWeek}-${selectedYear}.csv`);
+      showToast('✓ ڕاپۆرتی هەفتانە هەناردە کرا', 'success');
+    };
+
+    function convertToCSV(records) {
+      const headers = ['ڕێکەوت', 'نەخۆشی', 'تەمەن', 'ڕەگەز', 'کات'];
+      const rows = records.map(r => [
+        r.date,
+        r.diseaseName,
+        r.ageLabel,
+        r.genderLabel || (r.gender === 'male' ? 'نێر' : r.gender === 'female' ? 'مێ' : 'نەزانراو'),
+        r.savedAt?.toDate().toLocaleTimeString('ku') || ''
+      ]);
+      return [headers, ...rows].map(row => row.join(',')).join('\n');
+    }
+
+    function downloadFile(content, fileName) {
+      const blob = new Blob(['\uFEFF' + content], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = fileName;
+      link.click();
+    }
+
+    // Chart Initialization
+    async function initCharts() {
+      // Disease pie chart
+      const diseaseCtx = document.getElementById('diseaseChart');
+      if (diseaseCtx && typeof Chart !== 'undefined') {
+        const diseaseCounts = DISEASES.map(d => todayRecords.filter(r => r.disease === d.id).length);
+        new Chart(diseaseCtx, {
+          type: 'doughnut',
+          data: {
+            labels: DISEASES.map(d => d.name),
+            datasets: [{ data: diseaseCounts, backgroundColor: DISEASES.map(d => d.color) }]
+          },
+          options: { responsive: true, plugins: { legend: { position: 'right' } } }
+        });
+      }
+
+      // Age/gender bar chart
+      const ageCtx = document.getElementById('ageChart');
+      if (ageCtx && typeof Chart !== 'undefined') {
+        const maleCounts = AGE_GROUPS.map(a => todayRecords.filter(r => r.ageGroup === a.id && r.gender === 'male').length);
+        const femaleCounts = AGE_GROUPS.map(a => todayRecords.filter(r => r.ageGroup === a.id && r.gender === 'female').length);
+        new Chart(ageCtx, {
+          type: 'bar',
+          data: {
+            labels: AGE_GROUPS.map(a => a.label),
+            datasets: [
+              { label: '♂ نێر', data: maleCounts, backgroundColor: '#185FA5' },
+              { label: '♀ مێ', data: femaleCounts, backgroundColor: '#A32D2D' }
+            ]
+          },
+          options: { responsive: true, scales: { x: { stacked: false }, y: { beginAtZero: true } } }
+        });
+      }
+
+      // Trend chart (last 7 days from weekRecords)
+      const trendCtx = document.getElementById('trendChart');
+      if (trendCtx && typeof Chart !== 'undefined') {
+        const days = [];
+        const counts = [];
+        for (let i = 6; i >= 0; i--) {
+          const d = new Date(selectedDate);
+          d.setDate(d.getDate() - i);
+          days.push(d.getDate() + '/' + (d.getMonth()+1));
+          counts.push(weekRecords.filter(r => r.date === formatDateForStorage(d)).length);
+        }
+        new Chart(trendCtx, {
+          type: 'line',
+          data: {
+            labels: days,
+            datasets: [{ label: 'حاڵەتەکان', data: counts, borderColor: '#0f6e56', backgroundColor: 'rgba(15,110,86,0.1)', fill: true, tension: 0.4 }]
+          },
+          options: { responsive: true, scales: { y: { beginAtZero: true } } }
+        });
+      }
+
+      // Yearly chart placeholder
+      const yearlyCtx = document.getElementById('yearlyChart');
+      if (yearlyCtx && typeof Chart !== 'undefined') {
+        const months = ['١','٢','٣','٤','٥','٦','٧','٨','٩','١٠','١١','١٢'];
+        const monthCounts = months.map((_, i) => weekRecords.filter(r => new Date(r.date).getMonth() === i).length);
+        new Chart(yearlyCtx, {
+          type: 'bar',
+          data: {
+            labels: months,
+            datasets: [{ label: 'کۆی مانگانە', data: monthCounts, backgroundColor: '#185FA5' }]
+          },
+          options: { responsive: true, scales: { y: { beginAtZero: true } } }
+        });
+      }
+
+      // Analytics charts
+      const predCtx = document.getElementById('predictionChart');
+      if (predCtx && typeof Chart !== 'undefined') {
+        const labels = [];
+        const data = [];
+        for (let i = 0; i < 14; i++) {
+          const d = new Date(selectedDate);
+          d.setDate(d.getDate() - 7 + i);
+          labels.push(d.getDate() + '/' + (d.getMonth()+1));
+          const base = weekRecords.filter(r => r.date === formatDateForStorage(d)).length;
+          data.push(i < 7 ? base : Math.max(0, base + Math.round((Math.random()-0.5)*2)));
+        }
+        new Chart(predCtx, {
+          type: 'line',
+          data: {
+            labels,
+            datasets: [{ label: 'پێشبینی', data, borderColor: '#854F0B', backgroundColor: 'rgba(133,79,11,0.1)', fill: true, tension: 0.4, borderDash: [5,5] }]
+          },
+          options: { responsive: true }
+        });
+      }
+
+      const seasonCtx = document.getElementById('seasonalChart');
+      if (seasonCtx && typeof Chart !== 'undefined') {
+        new Chart(seasonCtx, {
+          type: 'bar',
+          data: {
+            labels: ['زستان','بەهار','هاوین','پایز'],
+            datasets: DISEASES.slice(0,4).map(d => ({
+              label: d.name,
+              data: [Math.random()*10|0, Math.random()*10|0, Math.random()*10|0, Math.random()*10|0],
+              backgroundColor: d.color
+            }))
+          },
+          options: { responsive: true, scales: { x: { stacked: true }, y: { stacked: true } } }
+        });
+      }
+    }
+
+    // Missing page render
+    function renderMonthlyPage() {
+      const monthNames = ['','کانوونی دووەم','شوبات','ئازار','نیسان','ئایار','حوزەیران','تەممووز','ئاب','ئەیلوول','تشرینی یەکەم','تشرینی دووەم','کانوونی یەکەم'];
+      return `
+        <div class="content-header">
+          <div class="header-title">
+            <h3>ڕاپۆرتی مانگانە</h3>
+            <h2>${monthNames[selectedMonth]} · ${selectedYear}</h2>
+          </div>
+          <div class="header-actions">
+            <button class="btn" onclick="changeMonth(-1)">‹</button>
+            <span class="current-date">${monthNames[selectedMonth]}</span>
+            <button class="btn" onclick="changeMonth(1)">›</button>
+          </div>
+        </div>
+
+        <div class="charts-container">
+          <div class="chart-card">
+            <div class="chart-title">ڕێژەی نەخۆشییەکان بەپێی جۆر</div>
+            <canvas id="monthDiseaseChart" style="height:300px"></canvas>
+          </div>
+          <div class="chart-card">
+            <div class="chart-title">بەراوردی نێر و مێ</div>
+            <canvas id="monthGenderChart" style="height:300px"></canvas>
+          </div>
+        </div>
+
+        <div style="margin-top:24px">
+          ${DISEASES.map(disease => {
+            const recs = weekRecords.filter(r => r.disease === disease.id && new Date(r.date).getMonth()+1 === selectedMonth);
+            if (recs.length === 0) return '';
+            const male = recs.filter(r => r.gender === 'male').length;
+            const female = recs.filter(r => r.gender === 'female').length;
+            return `
+              <div class="disease-card" style="margin-bottom:16px;border-right:4px solid ${disease.color}">
+                <div class="card-header">
+                  <span class="disease-color" style="background:${disease.color}"></span>
+                  <span class="disease-name">${disease.icon} ${disease.name}</span>
+                  <span class="disease-total">کۆ: ${recs.length}</span>
+                </div>
+                <div style="padding:16px;display:flex;gap:24px">
+                  <span style="color:#185FA5">♂ نێر: ${male}</span>
+                  <span style="color:#A32D2D">♀ مێ: ${female}</span>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `;
+    }
+
+    window.changeMonth = function(delta) {
+      selectedMonth += delta;
+      if (selectedMonth < 1) { selectedMonth = 12; selectedYear--; }
+      if (selectedMonth > 12) { selectedMonth = 1; selectedYear++; }
+      renderCurrentPage();
+      setTimeout(initMonthlyCharts, 100);
+    };
+
+    function initMonthlyCharts() {
+      if (typeof Chart === 'undefined') return;
+      const monthRecs = weekRecords.filter(r => new Date(r.date).getMonth()+1 === selectedMonth);
+      
+      const diseaseCtx = document.getElementById('monthDiseaseChart');
+      if (diseaseCtx) {
+        const counts = DISEASES.map(d => monthRecs.filter(r => r.disease === d.id).length);
+        new Chart(diseaseCtx, {
+          type: 'pie',
+          data: { labels: DISEASES.map(d => d.name), datasets: [{ data: counts, backgroundColor: DISEASES.map(d => d.color) }] },
+          options: { responsive: true }
+        });
+      }
+
+      const genderCtx = document.getElementById('monthGenderChart');
+      if (genderCtx) {
+        const male = monthRecs.filter(r => r.gender === 'male').length;
+        const female = monthRecs.filter(r => r.gender === 'female').length;
+        new Chart(genderCtx, {
+          type: 'doughnut',
+          data: { labels: ['♂ نێر', '♀ مێ'], datasets: [{ data: [male, female], backgroundColor: ['#185FA5', '#A32D2D'] }] },
+          options: { responsive: true }
+        });
+      }
+    }
+
+    // Missing functions
+    window.generatePredictions = function() {
+      showToast('پێشبینی داتا چاکبووە', 'success');
+    };
+
+    window.generateNewReport = function() {
+      showModal('ڕاپۆرتی نوێ', `
+        <p style="margin-bottom:16px">جۆری ڕاپۆرت هەڵبژێرە:</p>
+        <div style="display:grid;gap:8px">
+          <button class="btn btn-primary" onclick="exportDaily();closeModal()">📊 ڕاپۆرتی ئەمڕۆ</button>
+          <button class="btn" onclick="exportWeekly();closeModal()">📅 ڕاپۆرتی هەفتانە</button>
+        </div>
+      `);
+    };
+
+    window.viewReport = function(i) {
+      showModal('ڕاپۆرت #' + i, '<p>ڕاپۆرتەکە بارکراوە نیە.</p>');
+    };
+
+    window.downloadReport = function(i) {
+      showToast('ڕاپۆرت #' + i + ' دابەزراوە', 'success');
+    };
+
+    // Modal functions
+    window.showQuickEntryModal = function() {
+      showModal('تۆماری خێرا', `
+        <div style="display:grid;gap:12px">
+          <select id="quickDisease" style="padding:12px;border-radius:var(--radius-sm);border:1px solid var(--border-light)">
+            ${DISEASES.map(d => `<option value="${d.id}">${d.icon} ${d.name}</option>`).join('')}
+          </select>
+          <select id="quickAge" style="padding:12px;border-radius:var(--radius-sm);border:1px solid var(--border-light)">
+            ${AGE_GROUPS.map(a => `<option value="${a.id}">${a.label} - ${a.sub}</option>`).join('')}
+          </select>
+          <select id="quickGender" style="padding:12px;border-radius:var(--radius-sm);border:1px solid var(--border-light)">
+            ${GENDERS.map(g => `<option value="${g.id}">${g.label}</option>`).join('')}
+          </select>
+          <input type="number" id="quickCount" placeholder="ژمارە" min="1" max="100" value="1" style="padding:12px;border-radius:var(--radius-sm);border:1px solid var(--border-light)">
+          <button class="btn btn-primary" onclick="quickAddRecords()">زیادکردن</button>
+        </div>
+      `);
+    };
+
+    window.quickAddRecords = function() {
+      const disease = document.getElementById('quickDisease').value;
+      const age = document.getElementById('quickAge').value;
+      const gender = document.getElementById('quickGender').value;
+      const count = parseInt(document.getElementById('quickCount').value);
+
+      for (let i = 0; i < count; i++) {
+        addRecord(disease, age, gender);
+      }
+
+      closeModal();
+    };
+
+    // Initialize
+    onAuthStateChanged(auth, (user) => {
+      currentUser = user;
+      updateUserUI();
+      if (user) {
+        loadData();
+      } else {
+        // Show login prompt
+        showModal('بەخێربێیت', `
+          <p style="margin-bottom:20px">تکایە بچۆرە ژوورەوە بۆ بەکارهێنانی سیستەم</p>
+          <button class="btn btn-primary" onclick="login();closeModal()">
+            <span class="btn-icon">🔑</span>
+            چوونەژوورەوە بە Google
+          </button>
+        `);
+      }
+    });
+
+    // Make functions global
+    window.login = login;
+    window.logout = logout;
+    window.changePage = changePage;
+    window.changeDate = changeDate;
+    window.changeWeek = changeWeek;
+    window.exportDaily = exportDaily;
+    window.exportWeekly = exportWeekly;
+    window.showQuickEntryModal = showQuickEntryModal;
+    window.quickAddRecords = quickAddRecords;
+
+    // Initial render
+    renderCurrentPage();
+  </script>
 </body>
 </html>

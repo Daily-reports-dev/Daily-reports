@@ -1,6 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, where, Timestamp, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 // ==================== Firebase Configuration ====================
 const firebaseConfig = {
@@ -15,8 +14,6 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const auth = getAuth(app);
-const provider = new GoogleAuthProvider();
 
 // ==================== Constants ====================
 const DISEASES = [
@@ -41,23 +38,28 @@ const AGE_GROUPS = [
 ];
 
 
-// ==================== Hospital Registry ====================
-// ئیمەیلی هەر نەخۆشخانەیەک لێرە زیاد بکە
-const HOSPITAL_REGISTRY = {
-  'karwan.karyy@gmail.com': 'مەڵبەندی تەندروستی شەهید فاتیح',
-  'active.halabja@gmail.com': 'مەڵبەندی تەندروستی شەهید نیازى',
-  // ... نەخۆشخانەی تر زیاد بکە
-};
+// ==================== User Registry ====================
+// یوزەرەکان لێرە زیاد بکە: { username, password, hospitalName, isAdmin }
+const USER_REGISTRY = [
+  { username: 'admin',   password: 'admin123',  hospitalName: 'ئەدمین — هەموو نەخۆشخانەکان', isAdmin: true  },
+  { username: 'fatih',   password: '123456',    hospitalName: 'مەڵبەندی تەندروستی شەهید فاتیح', isAdmin: false },
+  // یوزەری تر زیاد بکە وەک ئەمە
+];
 
-function getHospitalName(email) {
-  if (!email) return 'نەخۆشخانەی نەناسراو';
-  return HOSPITAL_REGISTRY[email.toLowerCase()] || email;
+function findUser(username, password) {
+  return USER_REGISTRY.find(
+    u => u.username.toLowerCase() === username.toLowerCase() && u.password === password
+  ) || null;
 }
 
-const ADMIN_EMAIL = 'karwan.karyy@gmail.com';
+function getHospitalName(username) {
+  const u = USER_REGISTRY.find(u => u.username.toLowerCase() === username.toLowerCase());
+  return u ? u.hospitalName : 'نەخۆشخانەی نەناسراو';
+}
 
-function isAdminUser(email) {
-  return email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+function isAdminUser(username) {
+  const u = USER_REGISTRY.find(u => u.username.toLowerCase() === username.toLowerCase());
+  return u ? u.isAdmin : false;
 }
 
 // ==================== State ====================
@@ -154,37 +156,34 @@ window.closeModal = function() {
 };
 
 // ==================== Authentication ====================
-async function login() {
-  try {
-    const result = await signInWithPopup(auth, provider);
-    currentUser = result.user;
-    isAdmin = isAdminUser(currentUser.email);
-    currentHospitalName = isAdmin ? '🔧 ئەدمین — هەموو نەخۆشخانەکان' : getHospitalName(currentUser.email);
-    // نەخۆشخانەی نەناسراو — خۆی تۆمار نەکات (ئەدمین مۆڵەتی هەیە)
-    if (!isAdmin && !HOSPITAL_REGISTRY[currentUser.email?.toLowerCase()]) {
-      await signOut(auth);
-      currentUser = null;
-      showToast('ئەم ئیمەیلە مۆڵەتی نیە. تکایە پەیوەندی بکە بە بەڕێوەبەر', 'error');
-      return;
-    }
-    loadData();
-    showToast(`بەخێربێیت ${isAdmin ? '- ئەدمین' : '- ' + currentHospitalName}`, 'success');
-  } catch (error) {
-    console.error('Login error:', error);
-    showToast('هەڵە لە چوونەژوورەوە', 'error');
+function login() {
+  const username = document.getElementById('loginUsername')?.value?.trim();
+  const password = document.getElementById('loginPassword')?.value;
+  if (!username || !password) {
+    showToast('تکایە ناو و پاسۆرد بنووسە', 'error');
+    return;
   }
+  const user = findUser(username, password);
+  if (!user) {
+    showToast('ناو یان پاسۆرد هەڵەیە', 'error');
+    return;
+  }
+  // Save session
+  currentUser = { uid: username, displayName: user.hospitalName, username: username };
+  isAdmin = user.isAdmin;
+  currentHospitalName = user.hospitalName;
+  localStorage.setItem('loggedInUser', JSON.stringify({ username, hospitalName: user.hospitalName, isAdmin: user.isAdmin }));
+  loadData();
+  showToast(`بەخێربێیت — ${currentHospitalName}`, 'success');
 }
 
-async function logout() {
-  try {
-    await signOut(auth);
-    currentUser = null;
-    showToast('بە سەرکەوتوویی چوویتە دەرەوە', 'success');
-    renderPage();
-  } catch (error) {
-    console.error('Logout error:', error);
-    showToast('هەڵە لە دەرچوون', 'error');
-  }
+function logout() {
+  currentUser = null;
+  isAdmin = false;
+  currentHospitalName = '';
+  localStorage.removeItem('loggedInUser');
+  showToast('بە سەرکەوتوویی چوویتە دەرەوە', 'success');
+  renderPage();
 }
 
 // ==================== Data Loading ====================
@@ -276,13 +275,22 @@ function renderPage() {
   
   if (!currentUser) {
     main.innerHTML = `
-      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:40px;text-align:center">
-        <span style="font-size:64px">🏥</span>
-        <h2 style="color:var(--primary)">تۆماری نەخۆشی</h2>
-        <p style="font-size:14px;color:var(--text-secondary)">تکایە بە ئەکاونتی نەخۆشخانەکەت بچۆرە ژوورەوە</p>
-        <button class="action-btn primary" onclick="login()" style="padding:14px 32px;font-size:15px;border-radius:30px">
-          🔑 چوونەژوورەوە بە Google
-        </button>
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:32px 20px;text-align:center;max-width:320px;margin:0 auto">
+        <span style="font-size:56px">🏥</span>
+        <h2 style="color:var(--primary);font-size:18px">تۆماری نەخۆشی</h2>
+        <div style="width:100%;background:var(--bg-secondary);border-radius:var(--radius-lg);padding:20px;border:1px solid var(--border-light)">
+          <div style="margin-bottom:12px;text-align:right">
+            <label style="font-size:13px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:4px">👤 ناوی بەکارهێنەر</label>
+            <input type="text" id="loginUsername" placeholder="ناوت بنووسە" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border-light);font-size:14px;font-family:inherit" onkeydown="if(event.key==='Enter')document.getElementById('loginPassword').focus()">
+          </div>
+          <div style="margin-bottom:16px;text-align:right">
+            <label style="font-size:13px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:4px">🔒 پاسۆرد</label>
+            <input type="password" id="loginPassword" placeholder="پاسۆردت بنووسە" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border-light);font-size:14px;font-family:inherit" onkeydown="if(event.key==='Enter')login()">
+          </div>
+          <button class="action-btn primary" onclick="login()" style="width:100%;padding:12px;font-size:15px;border-radius:10px">
+            🔑 چوونەژوورەوە
+          </button>
+        </div>
       </div>
     `;
     return;
@@ -1727,19 +1735,24 @@ window.toggleSetting = function(setting) {
 };
 
 // ==================== Initialize ====================
-onAuthStateChanged(auth, (user) => {
-  if (user) {
-    currentUser = user;
-    isAdmin = isAdminUser(currentUser.email);
-    currentHospitalName = isAdmin ? '🔧 ئەدمین — هەموو نەخۆشخانەکان' : getHospitalName(currentUser.email);
-    loadData();
+// Restore session from localStorage
+(function restoreSession() {
+  const saved = localStorage.getItem('loggedInUser');
+  if (saved) {
+    try {
+      const u = JSON.parse(saved);
+      currentUser = { uid: u.username, displayName: u.hospitalName, username: u.username };
+      isAdmin = u.isAdmin;
+      currentHospitalName = u.hospitalName;
+      loadData();
+    } catch(e) {
+      localStorage.removeItem('loggedInUser');
+      renderPage();
+    }
   } else {
-    currentUser = null;
-    isAdmin = false;
-    currentHospitalName = '';
     renderPage();
   }
-});
+})();
 
 // Make all functions global
 window.login = login;

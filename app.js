@@ -44,12 +44,8 @@ const AGE_GROUPS = [
 // ==================== Hospital Registry ====================
 // ئیمەیلی هەر نەخۆشخانەیەک لێرە زیاد بکە
 const HOSPITAL_REGISTRY = {
-  'karwan.karyy@gmail.com':    'مەڵبەندی تەندروستى شەهید فاتیح ',
-  'hospital2@gmail.com':    'نەخۆشخانەی ژنان و منداڵان',
-  'hospital3@gmail.com':    'نەخۆشخانەی هەولێر',
-  'hospital4@gmail.com':    'نەخۆشخانەی دهۆک',
-  'hospital5@gmail.com':    'نەخۆشخانەی کەرکووک',
-  // ... زیادی تر زیاد بکە
+  'karwan.karyy@gmail.com': 'مەڵبەندی تەندروستی شەهید فاتیح',
+  // ... نەخۆشخانەی تر زیاد بکە
 };
 
 function getHospitalName(email) {

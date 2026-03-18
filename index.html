@@ -360,93 +360,169 @@
       font-size: 14px;
     }
 
-    /* Disease Grid */
-    .disease-grid {
+    /* Disease List */
+    .disease-list {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-      gap: var(--spacing-md);
-      margin-top: var(--spacing-lg);
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: var(--spacing-sm);
+      margin-bottom: var(--spacing-lg);
     }
 
-    .disease-card {
+    .disease-item {
       background: var(--bg-main);
+      border: 2px solid var(--border-light);
       border-radius: var(--radius-lg);
-      border: 1px solid var(--border-light);
-      overflow: hidden;
-      transition: all 0.3s;
-    }
-
-    .disease-card:hover {
-      box-shadow: var(--shadow-lg);
-    }
-
-    .card-header {
       padding: var(--spacing-md);
+      cursor: pointer;
+      transition: all 0.3s;
       display: flex;
       align-items: center;
       gap: var(--spacing-md);
-      border-bottom: 1px solid var(--border-light);
+      position: relative;
+      overflow: hidden;
     }
 
-    .disease-color {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
+    .disease-item:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .disease-item.active {
+      border-color: var(--primary);
+      background: var(--primary-light);
+    }
+
+    .disease-icon {
+      font-size: 24px;
+    }
+
+    .disease-info {
+      flex: 1;
     }
 
     .disease-name {
       font-weight: 700;
-      font-size: 16px;
-      flex: 1;
+      font-size: 14px;
     }
 
-    .disease-total {
-      background: var(--primary-light);
-      color: var(--primary);
-      padding: 4px 12px;
+    .disease-count {
+      font-size: 12px;
+      color: var(--text-tertiary);
+    }
+
+    .disease-badge {
+      background: var(--primary);
+      color: white;
+      padding: 2px 8px;
       border-radius: 20px;
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 700;
     }
 
-    /* Age Grid */
-    .age-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: var(--spacing-sm);
-      padding: var(--spacing-md);
-    }
-
-    .age-item {
+    /* Age Grid - only shown for selected disease */
+    .age-section {
+      background: var(--bg-main);
+      border-radius: var(--radius-lg);
       border: 1px solid var(--border-light);
-      border-radius: var(--radius-md);
-      overflow: hidden;
-      background: var(--bg-secondary);
+      padding: var(--spacing-lg);
+      margin-bottom: var(--spacing-lg);
+      animation: fadeIn 0.3s ease-out;
     }
 
-    .age-header {
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .selected-disease-header {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-md);
+      padding-bottom: var(--spacing-md);
+      margin-bottom: var(--spacing-md);
+      border-bottom: 2px solid var(--primary-light);
+    }
+
+    .selected-disease-icon {
+      font-size: 32px;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--primary-light);
+    }
+
+    .selected-disease-info h3 {
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--primary);
+    }
+
+    .selected-disease-info p {
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
+
+    .close-disease {
+      margin-right: auto;
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: var(--text-tertiary);
+      padding: var(--spacing-sm);
+      border-radius: 50%;
+      transition: all 0.2s;
+    }
+
+    .close-disease:hover {
+      background: var(--danger-light);
+      color: var(--danger);
+    }
+
+    .age-grid-compact {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: var(--spacing-md);
+    }
+
+    .age-card {
+      background: var(--bg-secondary);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border-light);
+      overflow: hidden;
+    }
+
+    .age-card-header {
       background: var(--bg-tertiary);
-      padding: 8px 4px;
+      padding: var(--spacing-md);
       text-align: center;
       border-bottom: 1px solid var(--border-light);
     }
 
-    .age-label {
+    .age-card-label {
       font-weight: 700;
-      font-size: 14px;
+      font-size: 18px;
     }
 
-    .age-sub {
-      font-size: 9px;
+    .age-card-sub {
+      font-size: 12px;
       color: var(--text-tertiary);
-      display: block;
     }
 
     .gender-row {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 8px;
+      padding: var(--spacing-md);
       border-bottom: 1px solid var(--border-light);
     }
 
@@ -457,57 +533,44 @@
     .gender-info {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: var(--spacing-md);
     }
 
-    .gender-icon-btn {
+    .gender-icon {
+      font-size: 24px;
       width: 40px;
       height: 40px;
       border-radius: 50%;
-      border: none;
-      cursor: pointer;
-      font-size: 20px;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: all 0.2s;
     }
 
-    .gender-icon-btn.male {
+    .gender-icon.male {
       background: var(--male-light);
       color: var(--male);
     }
 
-    .gender-icon-btn.female {
+    .gender-icon.female {
       background: var(--female-light);
       color: var(--female);
     }
 
-    .gender-icon-btn:hover {
-      transform: scale(1.1);
-      filter: brightness(0.95);
-    }
-
-    .gender-icon-btn:active {
-      transform: scale(0.95);
-    }
-
     .gender-count {
-      font-size: 18px;
+      font-size: 20px;
       font-weight: 700;
-      min-width: 30px;
+      min-width: 40px;
       text-align: center;
     }
 
     .gender-controls {
       display: flex;
-      align-items: center;
-      gap: 4px;
+      gap: var(--spacing-xs);
     }
 
     .control-btn {
-      width: 30px;
-      height: 30px;
+      width: 36px;
+      height: 36px;
       border-radius: 50%;
       border: 1px solid var(--border-light);
       background: var(--bg-main);
@@ -515,7 +578,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 16px;
+      font-size: 18px;
       font-weight: 700;
       transition: all 0.2s;
     }
@@ -530,11 +593,11 @@
       color: var(--danger);
     }
 
-    .total-badge {
+    .age-total {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 8px;
+      padding: var(--spacing-md);
       background: var(--bg-tertiary);
       border-top: 1px solid var(--border-light);
       font-weight: 700;
@@ -542,7 +605,7 @@
 
     .total-value {
       color: var(--primary);
-      font-size: 16px;
+      font-size: 18px;
     }
 
     /* Today's Log */
@@ -575,7 +638,7 @@
       display: flex;
       flex-direction: column;
       gap: var(--spacing-xs);
-      max-height: 400px;
+      max-height: 300px;
       overflow-y: auto;
     }
 
@@ -651,7 +714,6 @@
       color: var(--danger);
     }
 
-    /* Gender badge in log */
     .gender-badge {
       display: inline-block;
       padding: 2px 6px;
@@ -707,27 +769,6 @@
       margin-top: var(--spacing-xs);
     }
 
-    /* Charts */
-    .charts-container {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: var(--spacing-lg);
-      margin-top: var(--spacing-xl);
-    }
-
-    .chart-card {
-      background: var(--bg-main);
-      border-radius: var(--radius-lg);
-      padding: var(--spacing-lg);
-      border: 1px solid var(--border-light);
-    }
-
-    .chart-title {
-      font-weight: 700;
-      margin-bottom: var(--spacing-md);
-      color: var(--primary);
-    }
-
     /* Toast Notification */
     .toast {
       position: fixed;
@@ -758,20 +799,6 @@
 
     .toast.error {
       background: var(--danger);
-    }
-
-    /* Loading Spinner */
-    .spinner {
-      width: 40px;
-      height: 40px;
-      border: 3px solid var(--border-light);
-      border-top-color: var(--primary);
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
     }
 
     /* Modal */
@@ -840,11 +867,11 @@
     }
 
     @media (max-width: 768px) {
-      .disease-grid {
-        grid-template-columns: 1fr;
+      .disease-list {
+        grid-template-columns: repeat(2, 1fr);
       }
 
-      .charts-container {
+      .age-grid-compact {
         grid-template-columns: 1fr;
       }
 
@@ -1004,6 +1031,7 @@
     let selectedWeek = getWeekNumber(new Date());
     let selectedMonth = new Date().getMonth() + 1;
     let selectedYear = new Date().getFullYear();
+    let selectedDisease = null; // Track selected disease
 
     // Helper Functions
     function getWeekNumber(date) {
@@ -1101,7 +1129,7 @@
         // Load today's records
         const todayQuery = query(
           collection(db, 'daily_records'),
-          where('date', '==', formatDateForStorage(new Date())),
+          where('date', '==', formatDateForStorage(selectedDate)),
           orderBy('savedAt', 'desc')
         );
         const todaySnapshot = await getDocs(todayQuery);
@@ -1168,7 +1196,6 @@
           break;
         case 'analytics':
           mainContent.innerHTML = renderAnalyticsPage();
-          initCharts();
           break;
         case 'reports':
           mainContent.innerHTML = renderReportsPage();
@@ -1192,17 +1219,6 @@
               <span class="current-date">${formatDate(selectedDate)}</span>
               <button class="date-nav" onclick="changeDate(1)">›</button>
             </div>
-          </div>
-        </div>
-
-        <div class="charts-container">
-          <div class="chart-card">
-            <div class="chart-title">ڕێژەی نەخۆشییەکان بەپێی جۆر</div>
-            <canvas id="diseaseChart" style="height:300px"></canvas>
-          </div>
-          <div class="chart-card">
-            <div class="chart-title">ڕێژەی تەمەنی نەخۆشەکان</div>
-            <canvas id="ageChart" style="height:300px"></canvas>
           </div>
         </div>
 
@@ -1237,64 +1253,29 @@
           </div>
         </div>
 
-        <div class="disease-grid" id="diseaseGrid">
-          ${DISEASES.map(disease => `
-            <div class="disease-card" id="card-${disease.id}" style="border-right:4px solid ${disease.color}">
-              <div class="card-header">
-                <span class="disease-color" style="background:${disease.color}"></span>
-                <span class="disease-name">${disease.icon} ${disease.name}</span>
-                <span class="disease-total" id="total-${disease.id}">٠</span>
+        <!-- Disease List -->
+        <div class="disease-list">
+          ${DISEASES.map(disease => {
+            const count = todayRecords.filter(r => r.disease === disease.id).length;
+            return `
+              <div class="disease-item ${selectedDisease === disease.id ? 'active' : ''}" 
+                   onclick="selectDisease('${disease.id}')"
+                   style="${selectedDisease === disease.id ? `border-color: ${disease.color}; background: ${disease.bg}` : ''}">
+                <span class="disease-icon">${disease.icon}</span>
+                <div class="disease-info">
+                  <div class="disease-name">${disease.name}</div>
+                  <div class="disease-count">${count} تۆمار</div>
+                </div>
+                ${count > 0 ? `<span class="disease-badge">${count}</span>` : ''}
               </div>
-              <div class="age-grid" id="ages-${disease.id}">
-                ${AGE_GROUPS.map(age => `
-                  <div class="age-item" id="item-${disease.id}-${age.id}">
-                    <div class="age-header">
-                      <span class="age-label">${age.label}</span>
-                      <span class="age-sub">${age.sub}</span>
-                    </div>
-                    
-                    <!-- Male Row -->
-                    <div class="gender-row">
-                      <div class="gender-info">
-                        <button class="gender-icon-btn male" onclick="addRecord('${disease.id}', '${age.id}', 'male')">
-                          👨
-                        </button>
-                        <span class="gender-count" id="count-${disease.id}-${age.id}-male">٠</span>
-                      </div>
-                      <div class="gender-controls">
-                        <button class="control-btn" onclick="addRecord('${disease.id}', '${age.id}', 'male')">+</button>
-                        <button class="control-btn" onclick="decrementCount('${disease.id}', '${age.id}', 'male')">-</button>
-                        <button class="control-btn delete" onclick="deleteAllForGender('${disease.id}', '${age.id}', 'male')">🗑️</button>
-                      </div>
-                    </div>
-
-                    <!-- Female Row -->
-                    <div class="gender-row">
-                      <div class="gender-info">
-                        <button class="gender-icon-btn female" onclick="addRecord('${disease.id}', '${age.id}', 'female')">
-                          👩
-                        </button>
-                        <span class="gender-count" id="count-${disease.id}-${age.id}-female">٠</span>
-                      </div>
-                      <div class="gender-controls">
-                        <button class="control-btn" onclick="addRecord('${disease.id}', '${age.id}', 'female')">+</button>
-                        <button class="control-btn" onclick="decrementCount('${disease.id}', '${age.id}', 'female')">-</button>
-                        <button class="control-btn delete" onclick="deleteAllForGender('${disease.id}', '${age.id}', 'female')">🗑️</button>
-                      </div>
-                    </div>
-
-                    <!-- Total for this age group -->
-                    <div class="total-badge">
-                      <span>کۆی گشتی</span>
-                      <span class="total-value" id="total-${disease.id}-${age.id}">٠</span>
-                    </div>
-                  </div>
-                `).join('')}
-              </div>
-            </div>
-          `).join('')}
+            `;
+          }).join('')}
         </div>
 
+        <!-- Age Section for Selected Disease -->
+        ${selectedDisease ? renderAgeSection(selectedDisease) : ''}
+
+        <!-- Today's Log -->
         <div class="log-section">
           <div class="log-header">
             <h3 class="log-title">تۆماری ئەمڕۆ</h3>
@@ -1302,6 +1283,74 @@
           </div>
           <div class="log-list" id="todayLogList">
             ${renderTodayLog()}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderAgeSection(diseaseId) {
+      const disease = DISEASES.find(d => d.id === diseaseId);
+      
+      return `
+        <div class="age-section" id="ageSection">
+          <div class="selected-disease-header">
+            <div class="selected-disease-icon" style="background: ${disease.bg}">
+              ${disease.icon}
+            </div>
+            <div class="selected-disease-info">
+              <h3>${disease.name}</h3>
+              <p>تەمەنەکان بۆ ${disease.name}</p>
+            </div>
+            <button class="close-disease" onclick="selectDisease(null)">✕</button>
+          </div>
+
+          <div class="age-grid-compact">
+            ${AGE_GROUPS.map(age => {
+              const maleCount = todayRecords.filter(r => r.disease === diseaseId && r.ageGroup === age.id && r.gender === 'male').length;
+              const femaleCount = todayRecords.filter(r => r.disease === diseaseId && r.ageGroup === age.id && r.gender === 'female').length;
+              const totalCount = maleCount + femaleCount;
+              
+              return `
+                <div class="age-card" id="age-${diseaseId}-${age.id}">
+                  <div class="age-card-header">
+                    <span class="age-card-label">${age.label}</span>
+                    <span class="age-card-sub">${age.sub}</span>
+                  </div>
+                  
+                  <!-- Male Row -->
+                  <div class="gender-row">
+                    <div class="gender-info">
+                      <span class="gender-icon male">👨</span>
+                      <span class="gender-count" id="count-${diseaseId}-${age.id}-male">${maleCount}</span>
+                    </div>
+                    <div class="gender-controls">
+                      <button class="control-btn" onclick="addRecord('${diseaseId}', '${age.id}', 'male')">+</button>
+                      <button class="control-btn" onclick="decrementCount('${diseaseId}', '${age.id}', 'male')">-</button>
+                      <button class="control-btn delete" onclick="deleteAllForGender('${diseaseId}', '${age.id}', 'male')">🗑️</button>
+                    </div>
+                  </div>
+
+                  <!-- Female Row -->
+                  <div class="gender-row">
+                    <div class="gender-info">
+                      <span class="gender-icon female">👩</span>
+                      <span class="gender-count" id="count-${diseaseId}-${age.id}-female">${femaleCount}</span>
+                    </div>
+                    <div class="gender-controls">
+                      <button class="control-btn" onclick="addRecord('${diseaseId}', '${age.id}', 'female')">+</button>
+                      <button class="control-btn" onclick="decrementCount('${diseaseId}', '${age.id}', 'female')">-</button>
+                      <button class="control-btn delete" onclick="deleteAllForGender('${diseaseId}', '${age.id}', 'female')">🗑️</button>
+                    </div>
+                  </div>
+
+                  <!-- Total for this age -->
+                  <div class="age-total">
+                    <span>کۆی گشتی</span>
+                    <span class="total-value" id="total-${diseaseId}-${age.id}">${totalCount}</span>
+                  </div>
+                </div>
+              `;
+            }).join('')}
           </div>
         </div>
       `;
@@ -1487,7 +1536,24 @@
       }
     }
 
+    function renderAnalyticsPage() {
+      return `<div style="text-align:center;padding:48px">شیکردنەوە پێشکەوتووەکان (بەم زووانە)</div>`;
+    }
+
+    function renderReportsPage() {
+      return `<div style="text-align:center;padding:48px">ڕاپۆرتەکان (بەم زووانە)</div>`;
+    }
+
+    function renderSettingsPage() {
+      return `<div style="text-align:center;padding:48px">ڕێکخستنەکان (بەم زووانە)</div>`;
+    }
+
     // Actions
+    window.selectDisease = function(diseaseId) {
+      selectedDisease = diseaseId;
+      renderCurrentPage();
+    };
+
     window.addRecord = async function(diseaseId, ageGroupId, genderId) {
       if (!currentUser) {
         showToast('تکایە سەرەتا بچۆرە ژوورەوە', 'error');
@@ -1527,7 +1593,7 @@
         updateStats();
 
         // Animation
-        const btn = document.querySelector(`[onclick="addRecord('${diseaseId}', '${ageGroupId}', '${genderId}')"]`);
+        const btn = event?.target;
         if (btn) {
           btn.style.transform = 'scale(0.95)';
           setTimeout(() => {
@@ -1627,12 +1693,27 @@
         totalEl.textContent = ageTotal;
       }
 
-      // Update disease total
+      // Update disease total in the list
       const diseaseTotal = todayRecords.filter(r => r.disease === diseaseId).length;
-      const diseaseTotalEl = document.getElementById(`total-${diseaseId}`);
-      if (diseaseTotalEl) {
-        diseaseTotalEl.textContent = diseaseTotal;
-      }
+      const diseaseItems = document.querySelectorAll('.disease-item');
+      diseaseItems.forEach(item => {
+        if (item.getAttribute('onclick')?.includes(diseaseId)) {
+          const badge = item.querySelector('.disease-badge');
+          const countSpan = item.querySelector('.disease-count');
+          if (badge) {
+            if (diseaseTotal > 0) {
+              badge.textContent = diseaseTotal;
+            } else {
+              badge.remove();
+            }
+          } else if (diseaseTotal > 0) {
+            item.innerHTML += `<span class="disease-badge">${diseaseTotal}</span>`;
+          }
+          if (countSpan) {
+            countSpan.textContent = `${diseaseTotal} تۆمار`;
+          }
+        }
+      });
     }
 
     function updateTodayLog() {
@@ -1666,14 +1747,15 @@
     }
 
     function initDailyInteractions() {
-      todayRecords.forEach(record => {
-        updateGenderCount(record.disease, record.ageGroup, record.gender);
-      });
+      // This will be called after rendering daily page
     }
 
     // Navigation
     window.changePage = function(page) {
       currentPage = page;
+      if (page !== 'daily') {
+        selectedDisease = null; // Clear selected disease when leaving daily page
+      }
       document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
       event.currentTarget.classList.add('active');
       renderCurrentPage();
@@ -1684,6 +1766,7 @@
       selectedWeek = getWeekNumber(selectedDate);
       selectedMonth = selectedDate.getMonth() + 1;
       selectedYear = selectedDate.getFullYear();
+      selectedDisease = null; // Clear selected disease when changing date
       loadData();
     };
 
@@ -1725,12 +1808,6 @@
       link.href = URL.createObjectURL(blob);
       link.download = fileName;
       link.click();
-    }
-
-    // Chart Initialization
-    async function initCharts() {
-      // This would require Chart.js library
-      // For now, we'll just show placeholder
     }
 
     // Modal functions

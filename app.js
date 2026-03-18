@@ -1188,8 +1188,7 @@ window.addRecord = async function(diseaseId, ageGroupId, genderId) {
     savedAt: new Date().toISOString(),
     userId: currentUser.uid,
     userName: currentUser.displayName,
-    hospitalName: currentHospitalName,
-    hospitalEmail: currentUser.email
+    hospitalName: currentHospitalName
   };
 
   try {

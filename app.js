@@ -1197,6 +1197,7 @@ window.addRecord = async function(diseaseId, ageGroupId, genderId) {
     todayRecords.push(record);
     weekRecords.push(record);
     monthRecords.push(record);
+    yearRecords.push(record);
 
     updateGenderCount(diseaseId, ageGroupId, genderId);
     updateStats();
@@ -1222,6 +1223,7 @@ window.decrementCount = async function(diseaseId, ageGroupId, genderId) {
     todayRecords = todayRecords.filter(r => r.id !== recordsToDelete[0].id);
     weekRecords = weekRecords.filter(r => r.id !== recordsToDelete[0].id);
     monthRecords = monthRecords.filter(r => r.id !== recordsToDelete[0].id);
+    yearRecords = yearRecords.filter(r => r.id !== recordsToDelete[0].id);
 
     updateGenderCount(diseaseId, ageGroupId, genderId);
     updateStats();

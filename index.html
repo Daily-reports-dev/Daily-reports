@@ -412,16 +412,16 @@
     /* Age Grid */
     .age-grid {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: var(--spacing-xs);
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--spacing-sm);
       padding: var(--spacing-md);
     }
 
     .age-item {
-      position: relative;
       border: 1px solid var(--border-light);
       border-radius: var(--radius-md);
       overflow: hidden;
+      background: var(--bg-secondary);
     }
 
     .age-header {
@@ -442,66 +442,72 @@
       display: block;
     }
 
-    .gender-buttons {
+    .gender-row {
       display: flex;
-      gap: 1px;
-      background: var(--border-light);
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px;
+      border-bottom: 1px solid var(--border-light);
     }
 
-    .gender-btn {
-      flex: 1;
-      padding: 8px 0;
+    .gender-row:last-child {
+      border-bottom: none;
+    }
+
+    .gender-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .gender-icon-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
       border: none;
       cursor: pointer;
-      font-size: 12px;
-      font-weight: 600;
-      transition: all 0.2s;
+      font-size: 20px;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 4px;
+      transition: all 0.2s;
     }
 
-    .gender-btn.male {
+    .gender-icon-btn.male {
       background: var(--male-light);
       color: var(--male);
     }
 
-    .gender-btn.female {
+    .gender-icon-btn.female {
       background: var(--female-light);
       color: var(--female);
     }
 
-    .gender-btn:hover {
+    .gender-icon-btn:hover {
+      transform: scale(1.1);
       filter: brightness(0.95);
     }
 
-    .gender-btn:active {
+    .gender-icon-btn:active {
       transform: scale(0.95);
     }
 
-    .count-badge {
+    .gender-count {
+      font-size: 18px;
+      font-weight: 700;
+      min-width: 30px;
+      text-align: center;
+    }
+
+    .gender-controls {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      padding: 4px 8px;
-      background: var(--bg-secondary);
-      margin-top: 2px;
-    }
-
-    .count-value {
-      font-weight: 700;
-      font-size: 14px;
-    }
-
-    .count-controls {
-      display: flex;
       gap: 4px;
     }
 
-    .count-btn {
-      width: 24px;
-      height: 24px;
+    .control-btn {
+      width: 30px;
+      height: 30px;
       border-radius: 50%;
       border: 1px solid var(--border-light);
       background: var(--bg-main);
@@ -514,14 +520,29 @@
       transition: all 0.2s;
     }
 
-    .count-btn:hover {
+    .control-btn:hover {
       background: var(--primary-light);
       color: var(--primary);
     }
 
-    .count-btn.delete:hover {
+    .control-btn.delete:hover {
       background: var(--danger-light);
       color: var(--danger);
+    }
+
+    .total-badge {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px;
+      background: var(--bg-tertiary);
+      border-top: 1px solid var(--border-light);
+      font-weight: 700;
+    }
+
+    .total-value {
+      color: var(--primary);
+      font-size: 16px;
     }
 
     /* Today's Log */
@@ -554,6 +575,8 @@
       display: flex;
       flex-direction: column;
       gap: var(--spacing-xs);
+      max-height: 400px;
+      overflow-y: auto;
     }
 
     .log-item {
@@ -1229,20 +1252,41 @@
                       <span class="age-label">${age.label}</span>
                       <span class="age-sub">${age.sub}</span>
                     </div>
-                    <div class="gender-buttons">
-                      ${GENDERS.map(gender => `
-                        <button class="gender-btn ${gender.color}" onclick="addRecord('${disease.id}', '${age.id}', '${gender.id}')">
-                          ${gender.icon} ${gender.label}
+                    
+                    <!-- Male Row -->
+                    <div class="gender-row">
+                      <div class="gender-info">
+                        <button class="gender-icon-btn male" onclick="addRecord('${disease.id}', '${age.id}', 'male')">
+                          👨
                         </button>
-                      `).join('')}
-                    </div>
-                    <div class="count-badge" id="counts-${disease.id}-${age.id}">
-                      <span class="count-value" id="count-${disease.id}-${age.id}">٠</span>
-                      <div class="count-controls">
-                        <button class="count-btn" onclick="incrementCount('${disease.id}', '${age.id}')">+</button>
-                        <button class="count-btn" onclick="decrementCount('${disease.id}', '${age.id}')">-</button>
-                        <button class="count-btn delete" onclick="deleteAllForAge('${disease.id}', '${age.id}')">🗑️</button>
+                        <span class="gender-count" id="count-${disease.id}-${age.id}-male">٠</span>
                       </div>
+                      <div class="gender-controls">
+                        <button class="control-btn" onclick="addRecord('${disease.id}', '${age.id}', 'male')">+</button>
+                        <button class="control-btn" onclick="decrementCount('${disease.id}', '${age.id}', 'male')">-</button>
+                        <button class="control-btn delete" onclick="deleteAllForGender('${disease.id}', '${age.id}', 'male')">🗑️</button>
+                      </div>
+                    </div>
+
+                    <!-- Female Row -->
+                    <div class="gender-row">
+                      <div class="gender-info">
+                        <button class="gender-icon-btn female" onclick="addRecord('${disease.id}', '${age.id}', 'female')">
+                          👩
+                        </button>
+                        <span class="gender-count" id="count-${disease.id}-${age.id}-female">٠</span>
+                      </div>
+                      <div class="gender-controls">
+                        <button class="control-btn" onclick="addRecord('${disease.id}', '${age.id}', 'female')">+</button>
+                        <button class="control-btn" onclick="decrementCount('${disease.id}', '${age.id}', 'female')">-</button>
+                        <button class="control-btn delete" onclick="deleteAllForGender('${disease.id}', '${age.id}', 'female')">🗑️</button>
+                      </div>
+                    </div>
+
+                    <!-- Total for this age group -->
+                    <div class="total-badge">
+                      <span>کۆی گشتی</span>
+                      <span class="total-value" id="total-${disease.id}-${age.id}">٠</span>
                     </div>
                   </div>
                 `).join('')}
@@ -1478,18 +1522,18 @@
         weekRecords.push(record);
 
         // Update UI
-        updateAgeCount(diseaseId, ageGroupId);
+        updateGenderCount(diseaseId, ageGroupId, genderId);
         updateTodayLog();
         updateStats();
 
         // Animation
         const btn = document.querySelector(`[onclick="addRecord('${diseaseId}', '${ageGroupId}', '${genderId}')"]`);
-        btn.style.transform = 'scale(0.95)';
-        btn.style.background = disease.bg;
-        setTimeout(() => {
-          btn.style.transform = '';
-          btn.style.background = '';
-        }, 200);
+        if (btn) {
+          btn.style.transform = 'scale(0.95)';
+          setTimeout(() => {
+            btn.style.transform = '';
+          }, 200);
+        }
 
         showToast(`✓ تۆمار کرا: ${disease.name} - ${ageGroup.label} - ${gender.label}`, 'success');
 
@@ -1514,7 +1558,7 @@
         todayRecords = todayRecords.filter(r => r.id !== recordsToDelete[0].id);
         weekRecords = weekRecords.filter(r => r.id !== recordsToDelete[0].id);
 
-        updateAgeCount(diseaseId, ageGroupId);
+        updateGenderCount(diseaseId, ageGroupId, genderId);
         updateTodayLog();
         updateStats();
 
@@ -1525,38 +1569,32 @@
       }
     };
 
-    window.incrementCount = async function(diseaseId, ageGroupId) {
-      // Add a male record by default when incrementing
-      await addRecord(diseaseId, ageGroupId, 'male');
-    };
-
-    window.decrementCount = async function(diseaseId, ageGroupId) {
-      // Find the most recent record for this disease and age group (any gender)
+    window.decrementCount = async function(diseaseId, ageGroupId, genderId) {
       const recordsToDelete = todayRecords
-        .filter(r => r.disease === diseaseId && r.ageGroup === ageGroupId)
+        .filter(r => r.disease === diseaseId && r.ageGroup === ageGroupId && r.gender === genderId)
         .slice(-1);
 
       if (recordsToDelete.length === 0) return;
 
-      await deleteLastRecord(diseaseId, ageGroupId, recordsToDelete[0].gender);
+      await deleteLastRecord(diseaseId, ageGroupId, genderId);
     };
 
-    window.deleteAllForAge = async function(diseaseId, ageGroupId) {
+    window.deleteAllForGender = async function(diseaseId, ageGroupId, genderId) {
       const recordsToDelete = todayRecords
-        .filter(r => r.disease === diseaseId && r.ageGroup === ageGroupId);
+        .filter(r => r.disease === diseaseId && r.ageGroup === ageGroupId && r.gender === genderId);
 
       if (recordsToDelete.length === 0) return;
 
-      if (confirm(`دڵنیایت دەتەوێت هەموو ${recordsToDelete.length} تۆمارەکە بسڕیتەوە؟`)) {
+      if (confirm(`دڵنیایت دەتەوێت هەموو ${recordsToDelete.length} تۆماری ${genderId === 'male' ? 'نێر' : 'مێ'} بسڕیتەوە؟`)) {
         try {
           for (const record of recordsToDelete) {
             await deleteDoc(doc(db, 'daily_records', record.id));
           }
           
-          todayRecords = todayRecords.filter(r => !(r.disease === diseaseId && r.ageGroup === ageGroupId));
-          weekRecords = weekRecords.filter(r => !(r.disease === diseaseId && r.ageGroup === ageGroupId));
+          todayRecords = todayRecords.filter(r => !(r.disease === diseaseId && r.ageGroup === ageGroupId && r.gender === genderId));
+          weekRecords = weekRecords.filter(r => !(r.disease === diseaseId && r.ageGroup === ageGroupId && r.gender === genderId));
 
-          updateAgeCount(diseaseId, ageGroupId);
+          updateGenderCount(diseaseId, ageGroupId, genderId);
           updateTodayLog();
           updateStats();
 
@@ -1568,21 +1606,32 @@
       }
     };
 
-    function updateAgeCount(diseaseId, ageGroupId) {
-      const count = todayRecords.filter(r => 
+    function updateGenderCount(diseaseId, ageGroupId, genderId) {
+      // Update specific gender count
+      const genderCount = todayRecords.filter(r => 
+        r.disease === diseaseId && r.ageGroup === ageGroupId && r.gender === genderId
+      ).length;
+
+      const countEl = document.getElementById(`count-${diseaseId}-${ageGroupId}-${genderId}`);
+      if (countEl) {
+        countEl.textContent = genderCount;
+      }
+
+      // Update total for this age group
+      const ageTotal = todayRecords.filter(r => 
         r.disease === diseaseId && r.ageGroup === ageGroupId
       ).length;
 
-      const countEl = document.getElementById(`count-${diseaseId}-${ageGroupId}`);
-      if (countEl) {
-        countEl.textContent = count;
+      const totalEl = document.getElementById(`total-${diseaseId}-${ageGroupId}`);
+      if (totalEl) {
+        totalEl.textContent = ageTotal;
       }
 
       // Update disease total
       const diseaseTotal = todayRecords.filter(r => r.disease === diseaseId).length;
-      const totalEl = document.getElementById(`total-${diseaseId}`);
-      if (totalEl) {
-        totalEl.textContent = diseaseTotal;
+      const diseaseTotalEl = document.getElementById(`total-${diseaseId}`);
+      if (diseaseTotalEl) {
+        diseaseTotalEl.textContent = diseaseTotal;
       }
     }
 
@@ -1618,7 +1667,7 @@
 
     function initDailyInteractions() {
       todayRecords.forEach(record => {
-        updateAgeCount(record.disease, record.ageGroup);
+        updateGenderCount(record.disease, record.ageGroup, record.gender);
       });
     }
 

@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, where, Timestamp, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, where, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 // ==================== Firebase Configuration ====================
 const firebaseConfig = {
@@ -188,6 +188,16 @@ function logout() {
 
 // ==================== Data Loading ====================
 async function loadData() {
+  // نیشاندانی ناوی نەخۆشخانە فەوری
+  if (currentUser) {
+    const titleEl = document.querySelector('.app-title');
+    if (titleEl) {
+      titleEl.innerHTML = '🏥 ' + currentHospitalName +
+        '<span style="font-size:11px;background:rgba(255,255,255,0.25);padding:2px 8px;border-radius:10px;margin-right:8px">' +
+        currentUser.username + '</span>';
+    }
+  }
+
   if (!currentUser) {
     renderPage();
     return;
@@ -262,10 +272,12 @@ function updateStats() {
   document.getElementById('monthTotal').textContent = monthRecords.length;
   document.getElementById('yearTotal').textContent = yearRecords.length;
   document.getElementById('currentDateDisplay').textContent = formatDateWithYear(selectedDate);
-  // نیشاندانی ناوی نەخۆشخانە لە هێدەر
+  // نیشاندانی ناوی نەخۆشخانە و یوزەر لە هێدەر
   const titleEl = document.querySelector('.app-title');
-  if (titleEl && currentHospitalName) {
-    titleEl.textContent = '🏥 ' + currentHospitalName;
+  if (titleEl && currentUser) {
+    titleEl.innerHTML = '🏥 ' + currentHospitalName +
+      '<span style="font-size:11px;background:rgba(255,255,255,0.25);padding:2px 8px;border-radius:10px;margin-right:8px">' +
+      currentUser.username + '</span>';
   }
 }
 
@@ -1173,7 +1185,7 @@ window.addRecord = async function(diseaseId, ageGroupId, genderId) {
     week: getWeekNumber(selectedDate),
     month: selectedDate.getMonth() + 1,
     year: selectedDate.getFullYear(),
-    savedAt: Timestamp.now(),
+    savedAt: new Date().toISOString(),
     userId: currentUser.uid,
     userName: currentUser.displayName,
     hospitalName: currentHospitalName,
@@ -1541,7 +1553,7 @@ function convertToCSV(records) {
     r.diseaseName,
     r.ageLabel,
     r.gender === 'male' ? 'نێر' : 'مێ',
-    r.savedAt?.toDate?.().toLocaleTimeString() || ''
+    r.savedAt ? new Date(r.savedAt).toLocaleTimeString() : ''
   ]);
   return [headers, ...rows].map(row => row.join(',')).join('\n');
 }
@@ -1644,7 +1656,7 @@ async function saveReport(title, records) {
       count: records.length,
       data: records.slice(0, 100),
       userId: currentUser.uid,
-      createdAt: Timestamp.now()
+      createdAt: new Date().toISOString()
     };
     
     await addDoc(collection(db, 'saved_reports'), report);

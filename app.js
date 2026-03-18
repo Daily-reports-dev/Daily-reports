@@ -44,7 +44,7 @@ const AGE_GROUPS = [
 // ==================== Hospital Registry ====================
 // ئیمەیلی هەر نەخۆشخانەیەک لێرە زیاد بکە
 const HOSPITAL_REGISTRY = {
-  'hospital1@gmail.com':    'نەخۆشخانەی گشتی سلێمانی',
+  'karwan.karyy@gmail.com':    'مەڵبەندی تەندروستى شەهید فاتیح ',
   'hospital2@gmail.com':    'نەخۆشخانەی ژنان و منداڵان',
   'hospital3@gmail.com':    'نەخۆشخانەی هەولێر',
   'hospital4@gmail.com':    'نەخۆشخانەی دهۆک',

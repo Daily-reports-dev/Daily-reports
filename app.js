@@ -78,25 +78,33 @@ function formatDateShort(date) {
   return `${year}-${month}-${day}`;
 }
 
-function getWeekNumber(date) {
-  const firstDayOfYear = new Date(date.getFullYear(), 0, 1);
-  const pastDays = Math.floor((date - firstDayOfYear) / 86400000);
-  return Math.ceil((pastDays + firstDayOfYear.getDay() + 1) / 7);
-}
-
+// CDC Epi Week: هەفتە لە دووشەممە دەستپێدەکات، بە یەکشەممە کۆتایی دێت
 function getFirstDayOfWeek(date) {
-  const day = date.getDay(); // 0 = یەکشەممە, 6 = شەممە
-  const diff = day === 6 ? 0 : day + 1; // ڕاستکردنەوە بۆ شەممە وەک یەکەم ڕۆژ
-  const firstDay = new Date(date);
-  firstDay.setDate(date.getDate() - diff);
-  return firstDay;
+  const d = new Date(date);
+  const day = d.getDay(); // 0=یەکشەممە, 1=دووشەممە, ..., 6=شەممە
+  const diff = day === 0 ? -6 : 1 - day;
+  d.setDate(d.getDate() + diff);
+  d.setHours(0, 0, 0, 0);
+  return d;
 }
 
 function getWeekRange(date) {
   const firstDay = getFirstDayOfWeek(date);
   const lastDay = new Date(firstDay);
-  lastDay.setDate(firstDay.getDate() + 6);
+  lastDay.setDate(firstDay.getDate() + 6); // یەکشەممە
   return { firstDay, lastDay };
+}
+
+// CDC Epi Week Number
+function getWeekNumber(date) {
+  const monday = getFirstDayOfWeek(date);
+  const jan4 = new Date(monday.getFullYear(), 0, 4);
+  const firstMonday = getFirstDayOfWeek(jan4);
+  if (monday < firstMonday) {
+    return getWeekNumber(new Date(monday.getFullYear() - 1, 11, 31));
+  }
+  const weekNum = Math.floor((monday - firstMonday) / (7 * 86400000)) + 1;
+  return weekNum;
 }
 
 function showToast(msg, type = 'info') {
@@ -525,7 +533,7 @@ function renderDashboardPage() {
 }
 
 function renderWeeklyPage() {
-  const weekDays = ['شەممە', 'یەکشەممە', 'دووشەممە', 'سێشەممە', 'چوارشەممە', 'پێنجشەممە', 'هەینی'];
+  const weekDays = ['دووشەممە', 'سێشەممە', 'چوارشەممە', 'پێنجشەممە', 'هەینی', 'شەممە', 'یەکشەممە'];
   const { firstDay, lastDay } = getWeekRange(selectedDate);
   
   const weekStartStr = formatDateShort(firstDay);

@@ -45,7 +45,7 @@ const AGE_GROUPS = [
 // ئیمەیلی هەر نەخۆشخانەیەک لێرە زیاد بکە
 const HOSPITAL_REGISTRY = {
   'karwan.karyy@gmail.com': 'مەڵبەندی تەندروستی شەهید فاتیح',
-  'karwan78@gmail.com': 'مەڵبەندی تەندروستی شەهید نیازى',
+  'active.halabja@gmail.com': 'مەڵبەندی تەندروستی شەهید نیازى',
   // ... نەخۆشخانەی تر زیاد بکە
 };
 

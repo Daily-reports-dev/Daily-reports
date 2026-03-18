@@ -46,6 +46,7 @@ let currentPage = 'daily';
 let todayRecords = [];
 let weekRecords = [];
 let monthRecords = [];
+let yearRecords = [];
 let selectedDate = new Date();
 let selectedDisease = null;
 let savedReports = [];
@@ -188,6 +189,14 @@ async function loadData() {
     const monthSnapshot = await getDocs(monthQuery);
     monthRecords = monthSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
+    // Load year records
+    const yearQuery = query(
+      collection(db, 'daily_records'),
+      where('year', '==', year)
+    );
+    const yearSnapshot = await getDocs(yearQuery);
+    yearRecords = yearSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
     // Load saved reports
     await loadSavedReports();
 
@@ -223,7 +232,7 @@ function updateStats() {
   document.getElementById('todayTotal').textContent = todayRecords.length;
   document.getElementById('weekTotal').textContent = weekRecords.length;
   document.getElementById('monthTotal').textContent = monthRecords.length;
-  document.getElementById('yearTotal').textContent = monthRecords.length;
+  document.getElementById('yearTotal').textContent = yearRecords.length;
   document.getElementById('currentDateDisplay').textContent = formatDateWithYear(selectedDate);
 }
 
@@ -542,11 +551,11 @@ function renderWeeklyPage() {
   let weekHtml = `
     <div class="summary-card" style="margin-bottom:16px">
       <div style="margin-bottom:12px">
-        <label style="display:block;font-size:12px;color:var(--text-secondary);margin-bottom:4px">Period</label>
+        <label style="display:block;font-size:12px;color:var(--text-secondary);margin-bottom:4px">ماوەی هەفتە</label>
         <select id="weekSelect" style="width:100%;padding:10px;border-radius:var(--radius-md);border:1px solid var(--border-light);background:white" onchange="changeWeekBySelect(this.value)">
           ${weekOptions.map(opt => `
             <option value="${opt.weekNum}" ${opt.weekNum === weekNumber ? 'selected' : ''}>
-              Week ${opt.weekNum} - ${opt.startDate} - ${opt.endDate}
+              هەفتە ${opt.weekNum} - ${opt.startDate.toISOString().slice(0,10)} - ${opt.endDate.toISOString().slice(0,10)}
             </option>
           `).join('')}
         </select>
@@ -676,8 +685,10 @@ function renderWeeklyPage() {
 
 // Function to show day details modal (like in the image)
 window.showDayDetails = function(dateStr) {
-  const allRecords = [...todayRecords, ...weekRecords, ...monthRecords];
-  const dayRecords = allRecords.filter(r => r.date === dateStr);
+  // Use a Map to deduplicate records by ID
+  const recordMap = new Map();
+  [...todayRecords, ...weekRecords, ...monthRecords].forEach(r => recordMap.set(r.id, r));
+  const dayRecords = [...recordMap.values()].filter(r => r.date === dateStr);
   
   if (dayRecords.length === 0) {
     showToast('هیچ تۆمارێک نیە', 'info');
@@ -1158,13 +1169,13 @@ function updateGenderCount(diseaseId, ageGroupId, genderId) {
 }
 
 // ==================== Navigation ====================
-window.changePage = function(page) {
+window.changePage = function(page, clickedEl) {
   currentPage = page;
   selectedDisease = null;
   
   document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
-  if (event && event.currentTarget) {
-    event.currentTarget.classList.add('active');
+  if (clickedEl) {
+    clickedEl.classList.add('active');
   }
   
   renderPage();
@@ -1251,7 +1262,18 @@ window.exportCurrent = function() {
 };
 
 window.exportAllData = function() {
-  showToast('بەم زووانە', 'info');
+  if (!currentUser) {
+    showToast('تکایە سەرەتا بچۆرە ژوورەوە', 'error');
+    return;
+  }
+  const allRecords = [...new Map([...todayRecords, ...weekRecords, ...monthRecords, ...yearRecords].map(r => [r.id, r])).values()];
+  if (allRecords.length === 0) {
+    showToast('هیچ داتایەک نیە', 'info');
+    return;
+  }
+  const csv = convertToCSV(allRecords);
+  downloadFile(csv, `all-data-${formatDateShort(new Date())}.csv`);
+  showToast('✓ هەموو داتاکان هەناردە کران', 'success');
 };
 
 function convertToCSV(records) {

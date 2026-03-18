@@ -1741,15 +1741,6 @@
       if (recentLogs) {
         recentLogs.innerHTML = renderRecentLogs();
       }
-
-      // Refresh all card badges
-      DISEASES.forEach(disease => {
-        AGE_GROUPS.forEach(age => {
-          GENDERS.forEach(g => {
-            updateBadge(disease.id, age.id, g.id);
-          });
-        });
-      });
     }
 
     function checkAlertThresholds(diseaseId) {
@@ -1875,6 +1866,8 @@
         showToast('هەڵە لە دەسکاری', 'error');
       }
     };
+
+    function initDailyInteractions() {
       // Set all counters to zero first
       DISEASES.forEach(disease => {
         AGE_GROUPS.forEach(age => {

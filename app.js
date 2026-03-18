@@ -53,6 +53,12 @@ function getHospitalName(email) {
   return HOSPITAL_REGISTRY[email.toLowerCase()] || email;
 }
 
+const ADMIN_EMAIL = 'karwan.karyy@gmail.com';
+
+function isAdminUser(email) {
+  return email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+}
+
 // ==================== State ====================
 let currentUser = null;
 let currentHospitalName = '';
@@ -65,6 +71,7 @@ let selectedDate = new Date();
 let selectedDisease = null;
 let savedReports = [];
 let isLoading = false;
+let isAdmin = false;
 
 // ==================== Helper Functions ====================
 function formatDate(date) {
@@ -150,16 +157,17 @@ async function login() {
   try {
     const result = await signInWithPopup(auth, provider);
     currentUser = result.user;
-    currentHospitalName = getHospitalName(currentUser.email);
-    // نەخۆشخانەی نەناسراو — خۆی تۆمار نەکات
-    if (!HOSPITAL_REGISTRY[currentUser.email?.toLowerCase()]) {
+    isAdmin = isAdminUser(currentUser.email);
+    currentHospitalName = isAdmin ? '🔧 ئەدمین — هەموو نەخۆشخانەکان' : getHospitalName(currentUser.email);
+    // نەخۆشخانەی نەناسراو — خۆی تۆمار نەکات (ئەدمین مۆڵەتی هەیە)
+    if (!isAdmin && !HOSPITAL_REGISTRY[currentUser.email?.toLowerCase()]) {
       await signOut(auth);
       currentUser = null;
       showToast('ئەم ئیمەیلە مۆڵەتی نیە. تکایە پەیوەندی بکە بە بەڕێوەبەر', 'error');
       return;
     }
     loadData();
-    showToast(`بەخێربێیت - ${currentHospitalName}`, 'success');
+    showToast(`بەخێربێیت ${isAdmin ? '- ئەدمین' : '- ' + currentHospitalName}`, 'success');
   } catch (error) {
     console.error('Login error:', error);
     showToast('هەڵە لە چوونەژوورەوە', 'error');
@@ -192,42 +200,30 @@ async function loadData() {
     const todayStr = formatDateShort(selectedDate);
     
     // Load today's records
-    const todayQuery = query(
-      collection(db, 'daily_records'), 
-      where('date', '==', todayStr)
-    );
-    const todaySnapshot = await getDocs(todayQuery);
-    todayRecords = todaySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-    // Load week records by date range (more reliable than week number field)
     const year = selectedDate.getFullYear();
     const { firstDay: wFirst, lastDay: wLast } = getWeekRange(selectedDate);
     const weekStartStr = formatDateShort(wFirst);
     const weekEndStr = formatDateShort(wLast);
-    const weekQuery = query(
-      collection(db, 'daily_records'),
-      where('date', '>=', weekStartStr),
-      where('date', '<=', weekEndStr)
-    );
-    const weekSnapshot = await getDocs(weekQuery);
-    weekRecords = weekSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-    // Load month records
-    const monthQuery = query(
-      collection(db, 'daily_records'),
-      where('month', '==', selectedDate.getMonth() + 1),
-      where('year', '==', year)
-    );
-    const monthSnapshot = await getDocs(monthQuery);
-    monthRecords = monthSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    let todayQ, weekQ, monthQ, yearQ;
+    if (isAdmin) {
+      // ئەدمین — هەموو داتای هەموو نەخۆشخانەکان
+      todayQ = query(collection(db, 'daily_records'), where('date', '==', todayStr));
+      weekQ  = query(collection(db, 'daily_records'), where('date', '>=', weekStartStr), where('date', '<=', weekEndStr));
+      monthQ = query(collection(db, 'daily_records'), where('month', '==', selectedDate.getMonth() + 1), where('year', '==', year));
+      yearQ  = query(collection(db, 'daily_records'), where('year', '==', year));
+    } else {
+      // نەخۆشخانە — تەنها داتای خۆی
+      todayQ = query(collection(db, 'daily_records'), where('date', '==', todayStr), where('userId', '==', currentUser.uid));
+      weekQ  = query(collection(db, 'daily_records'), where('date', '>=', weekStartStr), where('date', '<=', weekEndStr), where('userId', '==', currentUser.uid));
+      monthQ = query(collection(db, 'daily_records'), where('month', '==', selectedDate.getMonth() + 1), where('year', '==', year), where('userId', '==', currentUser.uid));
+      yearQ  = query(collection(db, 'daily_records'), where('year', '==', year), where('userId', '==', currentUser.uid));
+    }
 
-    // Load year records
-    const yearQuery = query(
-      collection(db, 'daily_records'),
-      where('year', '==', year)
-    );
-    const yearSnapshot = await getDocs(yearQuery);
-    yearRecords = yearSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    todayRecords = (await getDocs(todayQ)).docs.map(d => ({ id: d.id, ...d.data() }));
+    weekRecords  = (await getDocs(weekQ)).docs.map(d => ({ id: d.id, ...d.data() }));
+    monthRecords = (await getDocs(monthQ)).docs.map(d => ({ id: d.id, ...d.data() }));
+    yearRecords  = (await getDocs(yearQ)).docs.map(d => ({ id: d.id, ...d.data() }));
 
     // Load saved reports
     await loadSavedReports();
@@ -1303,26 +1299,215 @@ window.editDayRecords = function(dateStr) {
 
 // ==================== Export Functions ====================
 window.exportCurrent = function() {
-  let records = [];
-  let fileName = '';
-  
-  if (currentPage === 'daily') {
-    records = todayRecords;
-    fileName = `daily-${formatDateShort(selectedDate)}.csv`;
-  } else if (currentPage === 'weekly') {
-    records = weekRecords;
-    fileName = `weekly-${getWeekNumber(selectedDate)}-${selectedDate.getFullYear()}.csv`;
-  } else if (currentPage === 'monthly') {
-    records = monthRecords;
-    fileName = `monthly-${selectedDate.getMonth()+1}-${selectedDate.getFullYear()}.csv`;
-  } else {
-    records = todayRecords;
-    fileName = `export-${Date.now()}.csv`;
-  }
-  
+  // نیشاندانی مۆدالی هەناردە
+  showExportModal();
+};
+
+window.showExportModal = function() {
+  const { firstDay, lastDay } = getWeekRange(selectedDate);
+  const weekNum = getWeekNumber(selectedDate);
+  showModal('📥 هەناردەی ڕاپۆرت', `
+    <div style="display:grid;gap:10px">
+      <p style="font-size:13px;color:var(--text-secondary);margin-bottom:4px">
+        هەفتە ${weekNum}: ${formatDateShort(firstDay)} - ${formatDateShort(lastDay)}
+      </p>
+      <button class="action-btn primary" style="padding:14px;font-size:14px" onclick="exportWeeklyExcel()">
+        📊 هەناردەی Excel — فۆرمی وەزارەت
+      </button>
+      <button class="action-btn" style="padding:14px;font-size:14px" onclick="exportWeeklyPDF()">
+        📄 هەناردەی PDF — فۆرمی وەزارەت
+      </button>
+      <button class="action-btn" style="padding:14px;font-size:14px" onclick="exportCSV()">
+        📋 هەناردەی CSV — داتای خام
+      </button>
+    </div>
+  `);
+};
+
+// Helper: build the weekly ministry report matrix
+function buildWeeklyMatrix(records) {
+  // AGE_GROUPS x GENDER for each disease
+  // Returns { disease_id: { age_id: { male: N, female: N } } }
+  const matrix = {};
+  DISEASES.forEach(d => {
+    matrix[d.id] = {};
+    AGE_GROUPS.forEach(a => {
+      matrix[d.id][a.id] = { male: 0, female: 0 };
+    });
+  });
+  records.forEach(r => {
+    if (matrix[r.disease] && matrix[r.disease][r.ageGroup]) {
+      if (r.gender === 'male') matrix[r.disease][r.ageGroup].male++;
+      else matrix[r.disease][r.ageGroup].female++;
+    }
+  });
+  return matrix;
+}
+
+window.exportCSV = function() {
+  let records = currentPage === 'weekly' ? weekRecords :
+                currentPage === 'monthly' ? monthRecords :
+                currentPage === 'daily' ? todayRecords : weekRecords;
   const csv = convertToCSV(records);
-  downloadFile(csv, fileName);
-  showToast('✓ هەناردە کرا', 'success');
+  const weekNum = getWeekNumber(selectedDate);
+  downloadFile(csv, `week${weekNum}-${selectedDate.getFullYear()}.csv`);
+  closeModal();
+  showToast('✓ CSV هەناردە کرا', 'success');
+};
+
+window.exportWeeklyExcel = function() {
+  const { firstDay, lastDay } = getWeekRange(selectedDate);
+  const weekNum = getWeekNumber(selectedDate);
+  const matrix = buildWeeklyMatrix(weekRecords);
+  const hospitalTitle = isAdmin ? 'هەموو نەخۆشخانەکان' : currentHospitalName;
+
+  // Build CSV in ministry format
+  const dateFrom = formatDateShort(firstDay);
+  const dateTo = formatDateShort(lastDay);
+  
+  let rows = [];
+  // Header rows
+  rows.push(['فۆرمی تۆماری نەخۆشی هەفتانە - وەزارەتی تەندروستی']);
+  rows.push([`نەخۆشخانە: ${hospitalTitle}`, '', `هەفتە: ${weekNum}`, '', `لە: ${dateFrom}`, `بۆ: ${dateTo}`]);
+  rows.push([]);
+  
+  // Column headers: disease | <1M | <1F | 1-4M | 1-4F | 5-14M | 5-14F | 15-24M | 15-24F | 25-44M | 25-44F | 45-64M | 45-64F | 65+M | 65+F | Total
+  const ageHeaders = [];
+  AGE_GROUPS.forEach(a => { ageHeaders.push(`${a.label} ن`); ageHeaders.push(`${a.label} م`); });
+  rows.push(['نەخۆشی', ...ageHeaders, 'کۆی گشتی نێر', 'کۆی گشتی مێ', 'کۆی گشتی']);
+  
+  // Data rows per disease
+  DISEASES.forEach(d => {
+    const row = [d.name];
+    let totalMale = 0, totalFemale = 0;
+    AGE_GROUPS.forEach(a => {
+      const cell = matrix[d.id][a.id];
+      row.push(cell.male);
+      row.push(cell.female);
+      totalMale += cell.male;
+      totalFemale += cell.female;
+    });
+    row.push(totalMale);
+    row.push(totalFemale);
+    row.push(totalMale + totalFemale);
+    rows.push(row);
+  });
+  
+  // Totals row
+  const totalsRow = ['کۆی گشتی'];
+  let grandMale = 0, grandFemale = 0;
+  AGE_GROUPS.forEach(a => {
+    let ageMale = 0, ageFemale = 0;
+    DISEASES.forEach(d => { ageMale += matrix[d.id][a.id].male; ageFemale += matrix[d.id][a.id].female; });
+    totalsRow.push(ageMale); totalsRow.push(ageFemale);
+    grandMale += ageMale; grandFemale += ageFemale;
+  });
+  totalsRow.push(grandMale); totalsRow.push(grandFemale); totalsRow.push(grandMale + grandFemale);
+  rows.push(totalsRow);
+  
+  const csv = rows.map(r => r.join(',')).join('\n');
+  downloadFile(csv, `weekly-report-week${weekNum}-${selectedDate.getFullYear()}.csv`);
+  closeModal();
+  showToast('✓ Excel هەناردە کرا', 'success');
+};
+
+window.exportWeeklyPDF = function() {
+  const { firstDay, lastDay } = getWeekRange(selectedDate);
+  const weekNum = getWeekNumber(selectedDate);
+  const matrix = buildWeeklyMatrix(weekRecords);
+  const hospitalTitle = isAdmin ? 'هەموو نەخۆشخانەکان' : currentHospitalName;
+  const dateFrom = formatDateShort(firstDay);
+  const dateTo = formatDateShort(lastDay);
+
+  // Age headers
+  const ageHeadersHtml = AGE_GROUPS.map(a =>
+    `<th colspan="2" style="background:#0f6e56;color:white;padding:4px;font-size:10px;border:1px solid #ccc">${a.label}</th>`
+  ).join('');
+  const ageSubHeadersHtml = AGE_GROUPS.map(() =>
+    `<th style="background:#185fa5;color:white;padding:3px;font-size:9px;border:1px solid #ccc">ن</th>
+     <th style="background:#b33a6a;color:white;padding:3px;font-size:9px;border:1px solid #ccc">م</th>`
+  ).join('');
+
+  // Disease rows
+  const diseaseRowsHtml = DISEASES.map(d => {
+    let totalM = 0, totalF = 0;
+    const cells = AGE_GROUPS.map(a => {
+      const c = matrix[d.id][a.id];
+      totalM += c.male; totalF += c.female;
+      return `<td style="text-align:center;padding:3px;border:1px solid #ddd;font-size:10px">${c.male||''}</td>
+              <td style="text-align:center;padding:3px;border:1px solid #ddd;font-size:10px">${c.female||''}</td>`;
+    }).join('');
+    return `<tr>
+      <td style="padding:4px 6px;border:1px solid #ddd;font-weight:600;font-size:11px">${d.icon} ${d.name}</td>
+      ${cells}
+      <td style="text-align:center;font-weight:700;color:#185fa5;border:1px solid #ddd;font-size:11px">${totalM||''}</td>
+      <td style="text-align:center;font-weight:700;color:#b33a6a;border:1px solid #ddd;font-size:11px">${totalF||''}</td>
+      <td style="text-align:center;font-weight:800;color:#0f6e56;border:1px solid #ddd;font-size:11px">${(totalM+totalF)||''}</td>
+    </tr>`;
+  }).join('');
+
+  // Totals
+  let gM = 0, gF = 0;
+  const totalCells = AGE_GROUPS.map(a => {
+    let aM = 0, aF = 0;
+    DISEASES.forEach(d => { aM += matrix[d.id][a.id].male; aF += matrix[d.id][a.id].female; });
+    gM += aM; gF += aF;
+    return `<td style="text-align:center;font-weight:700;background:#f0f9f5;border:1px solid #ddd;font-size:10px">${aM||''}</td>
+            <td style="text-align:center;font-weight:700;background:#f0f9f5;border:1px solid #ddd;font-size:10px">${aF||''}</td>`;
+  }).join('');
+
+  const html = `<!DOCTYPE html><html dir="rtl"><head>
+    <meta charset="UTF-8">
+    <style>
+      body { font-family: 'Segoe UI', Tahoma, sans-serif; margin: 10px; font-size: 11px; }
+      table { width: 100%; border-collapse: collapse; }
+      .header-box { background: #0f6e56; color: white; padding: 10px 16px; border-radius: 8px; margin-bottom: 10px; }
+      @media print { .no-print { display: none; } }
+    </style>
+  </head><body>
+    <div class="header-box">
+      <div style="font-size:16px;font-weight:700">🏥 وەزارەتی تەندروستی — فۆرمی تۆماری نەخۆشی هەفتانە</div>
+      <div style="margin-top:6px;font-size:12px">
+        <span style="margin-left:24px">📍 ${hospitalTitle}</span>
+        <span style="margin-left:24px">📅 هەفتە ${weekNum}</span>
+        <span style="margin-left:24px">لە: ${dateFrom}</span>
+        <span>بۆ: ${dateTo}</span>
+      </div>
+    </div>
+    <button class="no-print" onclick="window.print()" style="margin-bottom:10px;padding:8px 20px;background:#0f6e56;color:white;border:none;border-radius:6px;cursor:pointer;font-size:13px">🖨️ چاپکردن</button>
+    <table>
+      <thead>
+        <tr>
+          <th rowspan="2" style="background:#0a4d3b;color:white;padding:6px;border:1px solid #ccc;min-width:100px">نەخۆشی</th>
+          ${ageHeadersHtml}
+          <th style="background:#185fa5;color:white;padding:4px;font-size:10px;border:1px solid #ccc">کۆ ن</th>
+          <th style="background:#b33a6a;color:white;padding:4px;font-size:10px;border:1px solid #ccc">کۆ م</th>
+          <th style="background:#0f6e56;color:white;padding:4px;font-size:10px;border:1px solid #ccc">کۆی گشتی</th>
+        </tr>
+        <tr>${ageSubHeadersHtml}<th></th><th></th><th></th></tr>
+      </thead>
+      <tbody>
+        ${diseaseRowsHtml}
+        <tr style="background:#e8f5e9">
+          <td style="font-weight:800;padding:4px 6px;border:1px solid #ddd">کۆی گشتی</td>
+          ${totalCells}
+          <td style="text-align:center;font-weight:800;color:#185fa5;border:1px solid #ddd">${gM||''}</td>
+          <td style="text-align:center;font-weight:800;color:#b33a6a;border:1px solid #ddd">${gF||''}</td>
+          <td style="text-align:center;font-weight:900;color:#0f6e56;border:1px solid #ddd">${gM+gF||''}</td>
+        </tr>
+      </tbody>
+    </table>
+    <div style="margin-top:12px;font-size:10px;color:#888">دروستکراوە لە: ${new Date().toLocaleDateString('ar-IQ')}</div>
+  </body></html>`;
+
+  const blob = new Blob([html], { type: 'text/html' });
+  const url = URL.createObjectURL(blob);
+  const win = window.open(url, '_blank');
+  if (!win) {
+    downloadFile(html, `weekly-report-week${weekNum}.html`);
+  }
+  closeModal();
+  showToast('✓ PDF ئامادەیە — چاپی بکە', 'success');
 };
 
 window.exportAllData = function() {
@@ -1544,10 +1729,12 @@ window.toggleSetting = function(setting) {
 onAuthStateChanged(auth, (user) => {
   if (user) {
     currentUser = user;
-    currentHospitalName = getHospitalName(currentUser.email);
+    isAdmin = isAdminUser(currentUser.email);
+    currentHospitalName = isAdmin ? '🔧 ئەدمین — هەموو نەخۆشخانەکان' : getHospitalName(currentUser.email);
     loadData();
   } else {
     currentUser = null;
+    isAdmin = false;
     currentHospitalName = '';
     renderPage();
   }

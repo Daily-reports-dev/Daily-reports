@@ -40,8 +40,26 @@ const AGE_GROUPS = [
   { id: 'gte65', label: '٦٥+', sub: 'ساڵ و زیاتر' }
 ];
 
+
+// ==================== Hospital Registry ====================
+// ئیمەیلی هەر نەخۆشخانەیەک لێرە زیاد بکە
+const HOSPITAL_REGISTRY = {
+  'hospital1@gmail.com':    'نەخۆشخانەی گشتی سلێمانی',
+  'hospital2@gmail.com':    'نەخۆشخانەی ژنان و منداڵان',
+  'hospital3@gmail.com':    'نەخۆشخانەی هەولێر',
+  'hospital4@gmail.com':    'نەخۆشخانەی دهۆک',
+  'hospital5@gmail.com':    'نەخۆشخانەی کەرکووک',
+  // ... زیادی تر زیاد بکە
+};
+
+function getHospitalName(email) {
+  if (!email) return 'نەخۆشخانەی نەناسراو';
+  return HOSPITAL_REGISTRY[email.toLowerCase()] || email;
+}
+
 // ==================== State ====================
 let currentUser = null;
+let currentHospitalName = '';
 let currentPage = 'daily';
 let todayRecords = [];
 let weekRecords = [];
@@ -136,8 +154,16 @@ async function login() {
   try {
     const result = await signInWithPopup(auth, provider);
     currentUser = result.user;
+    currentHospitalName = getHospitalName(currentUser.email);
+    // نەخۆشخانەی نەناسراو — خۆی تۆمار نەکات
+    if (!HOSPITAL_REGISTRY[currentUser.email?.toLowerCase()]) {
+      await signOut(auth);
+      currentUser = null;
+      showToast('ئەم ئیمەیلە مۆڵەتی نیە. تکایە پەیوەندی بکە بە بەڕێوەبەر', 'error');
+      return;
+    }
     loadData();
-    showToast(`بەخێربێیت ${currentUser.displayName}`, 'success');
+    showToast(`بەخێربێیت - ${currentHospitalName}`, 'success');
   } catch (error) {
     console.error('Login error:', error);
     showToast('هەڵە لە چوونەژوورەوە', 'error');
@@ -244,6 +270,11 @@ function updateStats() {
   document.getElementById('monthTotal').textContent = monthRecords.length;
   document.getElementById('yearTotal').textContent = yearRecords.length;
   document.getElementById('currentDateDisplay').textContent = formatDateWithYear(selectedDate);
+  // نیشاندانی ناوی نەخۆشخانە لە هێدەر
+  const titleEl = document.querySelector('.app-title');
+  if (titleEl && currentHospitalName) {
+    titleEl.textContent = '🏥 ' + currentHospitalName;
+  }
 }
 
 // ==================== Page Rendering ====================
@@ -253,10 +284,11 @@ function renderPage() {
   if (!currentUser) {
     main.innerHTML = `
       <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:40px;text-align:center">
-        <span style="font-size:64px">🔐</span>
-        <p style="font-size:16px;color:var(--text-secondary)">تکایە بچۆرە ژوورەوە</p>
-        <button class="action-btn primary" onclick="login()" style="padding:12px 24px;font-size:14px">
-          چوونەژوورەوە بە Google
+        <span style="font-size:64px">🏥</span>
+        <h2 style="color:var(--primary)">تۆماری نەخۆشی</h2>
+        <p style="font-size:14px;color:var(--text-secondary)">تکایە بە ئەکاونتی نەخۆشخانەکەت بچۆرە ژوورەوە</p>
+        <button class="action-btn primary" onclick="login()" style="padding:14px 32px;font-size:15px;border-radius:30px">
+          🔑 چوونەژوورەوە بە Google
         </button>
       </div>
     `;
@@ -1070,6 +1102,10 @@ function renderSettingsPage() {
   return `
     <div class="settings-list">
       <div class="setting-item">
+        <span class="setting-label">🏥 نەخۆشخانە</span>
+        <span class="setting-value">${currentHospitalName}</span>
+      </div>
+      <div class="setting-item">
         <span class="setting-label">👤 ناوی بەکارهێنەر</span>
         <span class="setting-value">${currentUser?.displayName || 'بەکارهێنەر'}</span>
       </div>
@@ -1138,7 +1174,9 @@ window.addRecord = async function(diseaseId, ageGroupId, genderId) {
     year: selectedDate.getFullYear(),
     savedAt: Timestamp.now(),
     userId: currentUser.uid,
-    userName: currentUser.displayName
+    userName: currentUser.displayName,
+    hospitalName: currentHospitalName,
+    hospitalEmail: currentUser.email
   };
 
   try {
@@ -1510,9 +1548,11 @@ window.toggleSetting = function(setting) {
 onAuthStateChanged(auth, (user) => {
   if (user) {
     currentUser = user;
+    currentHospitalName = getHospitalName(currentUser.email);
     loadData();
   } else {
     currentUser = null;
+    currentHospitalName = '';
     renderPage();
   }
 });

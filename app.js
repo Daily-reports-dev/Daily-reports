@@ -169,13 +169,15 @@ async function loadData() {
     const todaySnapshot = await getDocs(todayQuery);
     todayRecords = todaySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-    // Load week records
-    const weekNum = getWeekNumber(selectedDate);
+    // Load week records by date range (more reliable than week number field)
     const year = selectedDate.getFullYear();
+    const { firstDay: wFirst, lastDay: wLast } = getWeekRange(selectedDate);
+    const weekStartStr = formatDateShort(wFirst);
+    const weekEndStr = formatDateShort(wLast);
     const weekQuery = query(
       collection(db, 'daily_records'),
-      where('week', '==', weekNum),
-      where('year', '==', year)
+      where('date', '>=', weekStartStr),
+      where('date', '<=', weekEndStr)
     );
     const weekSnapshot = await getDocs(weekQuery);
     weekRecords = weekSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));

@@ -583,7 +583,8 @@ function renderWeeklyPage() {
     const dateStr = formatDateShort(date);
     const displayDate = `${date.getDate()}/${date.getMonth()+1}`;
     
-    const dayRecords = weekRecords.filter(r => r.date === dateStr);
+    // Use monthRecords for accurate day counts (weekRecords may miss days outside current week load)
+    const dayRecords = monthRecords.filter(r => r.date === dateStr);
     const dayTotal = dayRecords.length;
     
     // Get male/female count for this day
@@ -609,10 +610,19 @@ function renderWeeklyPage() {
   
   weekHtml += '</div>';
 
+  // Collect all records for this specific week from monthRecords (accurate source)
+  const weekDatesSet = new Set();
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(firstDay);
+    d.setDate(firstDay.getDate() + i);
+    weekDatesSet.add(formatDateShort(d));
+  }
+  const thisWeekRecords = monthRecords.filter(r => weekDatesSet.has(r.date));
+
   // Total stats like in the image
-  const totalWeek = weekRecords.length;
-  const maleTotal = weekRecords.filter(r => r.gender === 'male').length;
-  const femaleTotal = weekRecords.filter(r => r.gender === 'female').length;
+  const totalWeek = thisWeekRecords.length;
+  const maleTotal = thisWeekRecords.filter(r => r.gender === 'male').length;
+  const femaleTotal = thisWeekRecords.filter(r => r.gender === 'female').length;
 
   weekHtml += `
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px">
@@ -633,7 +643,7 @@ function renderWeeklyPage() {
 
   // Disease breakdown
   const diseaseStats = {};
-  weekRecords.forEach(record => {
+  thisWeekRecords.forEach(record => {
     if (!diseaseStats[record.disease]) {
       const disease = DISEASES.find(d => d.id === record.disease);
       if (!disease) return;
@@ -653,7 +663,7 @@ function renderWeeklyPage() {
     <div class="log-section">
       <div class="log-header">
         <span class="log-title">📋 پێکهاتەی نەخۆشییەکان</span>
-        <span class="log-total">${weekRecords.length}</span>
+        <span class="log-total">${thisWeekRecords.length}</span>
       </div>
       <div class="log-list" style="max-height:300px">
   `;
@@ -685,10 +695,20 @@ function renderWeeklyPage() {
 
 // Function to show day details modal (like in the image)
 window.showDayDetails = function(dateStr) {
-  // Use a Map to deduplicate records by ID
-  const recordMap = new Map();
-  [...todayRecords, ...weekRecords, ...monthRecords].forEach(r => recordMap.set(r.id, r));
-  const dayRecords = [...recordMap.values()].filter(r => r.date === dateStr);
+  // Use monthRecords as primary source (most complete for any day in the month).
+  // Fall back to merging all caches only if the date is outside the current month.
+  const selectedMonth = selectedDate.getMonth() + 1;
+  const selectedYear = selectedDate.getFullYear();
+  const [dYear, dMonth] = dateStr.split('-').map(Number);
+  let sourceRecords;
+  if (dYear === selectedYear && dMonth === selectedMonth) {
+    sourceRecords = monthRecords;
+  } else {
+    const recordMap = new Map();
+    [...todayRecords, ...weekRecords, ...monthRecords, ...yearRecords].forEach(r => recordMap.set(r.id, r));
+    sourceRecords = [...recordMap.values()];
+  }
+  const dayRecords = sourceRecords.filter(r => r.date === dateStr);
   
   if (dayRecords.length === 0) {
     showToast('هیچ تۆمارێک نیە', 'info');

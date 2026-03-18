@@ -24,9 +24,9 @@ const DISEASES = [
   { id: 'typhoid', name: 'تیفۆیید', icon: '🌡️', color: '#BA7517' },
   { id: 'tb', name: 'سل', icon: '🫁', color: '#534AB7' },
   { id: 'cholera', name: 'کولێرا', icon: '💧', color: '#0F6E56' },
-  { id: 'bloody', name: 'خوێناوی', icon: '🩸', color: '#A32D2D' },
-  { id: 'hepatitisA', name: 'هەپاتایتس', icon: '🩺', color: '#185FA5' },
-  { id: 'covid', name: 'کۆڤید', icon: '🦠', color: '#3B6D11' },
+  { id: 'bloody', name: 'دیاریای خوێناوی', icon: '🩸', color: '#A32D2D' },
+  { id: 'hepatitisA', name: 'هەپاتایتس A', icon: '🩺', color: '#185FA5' },
+  { id: 'covid', name: 'کۆڤید-١٩', icon: '🦠', color: '#3B6D11' },
   { id: 'measles', name: 'قیژنە', icon: '🤒', color: '#993556' }
 ];
 
@@ -49,6 +49,7 @@ let monthRecords = [];
 let selectedDate = new Date();
 let selectedDisease = null;
 let savedReports = [];
+let isLoading = false;
 
 // ==================== Helper Functions ====================
 function formatDate(date) {
@@ -73,7 +74,7 @@ function formatDateShort(date) {
 
 function getWeekNumber(date) {
   const firstDayOfYear = new Date(date.getFullYear(), 0, 1);
-  const pastDays = (date - firstDayOfYear) / 86400000;
+  const pastDays = Math.floor((date - firstDayOfYear) / 86400000);
   return Math.ceil((pastDays + firstDayOfYear.getDay() + 1) / 7);
 }
 
@@ -117,6 +118,7 @@ async function login() {
     loadData();
     showToast(`بەخێربێیت ${currentUser.displayName}`, 'success');
   } catch (error) {
+    console.error('Login error:', error);
     showToast('هەڵە لە چوونەژوورەوە', 'error');
   }
 }
@@ -128,17 +130,25 @@ async function logout() {
     showToast('بە سەرکەوتوویی چوویتە دەرەوە', 'success');
     renderPage();
   } catch (error) {
+    console.error('Logout error:', error);
     showToast('هەڵە لە دەرچوون', 'error');
   }
 }
 
 // ==================== Data Loading ====================
 async function loadData() {
-  if (!currentUser) return;
+  if (!currentUser) {
+    renderPage();
+    return;
+  }
+  
+  isLoading = true;
+  renderPage(); // Show loading state
   
   try {
-    // Load today's records
     const todayStr = formatDateShort(selectedDate);
+    
+    // Load today's records
     const todayQuery = query(
       collection(db, 'daily_records'), 
       where('date', '==', todayStr)
@@ -148,10 +158,11 @@ async function loadData() {
 
     // Load week records
     const weekNum = getWeekNumber(selectedDate);
+    const year = selectedDate.getFullYear();
     const weekQuery = query(
       collection(db, 'daily_records'),
       where('week', '==', weekNum),
-      where('year', '==', selectedDate.getFullYear())
+      where('year', '==', year)
     );
     const weekSnapshot = await getDocs(weekQuery);
     weekRecords = weekSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -160,7 +171,7 @@ async function loadData() {
     const monthQuery = query(
       collection(db, 'daily_records'),
       where('month', '==', selectedDate.getMonth() + 1),
-      where('year', '==', selectedDate.getFullYear())
+      where('year', '==', year)
     );
     const monthSnapshot = await getDocs(monthQuery);
     monthRecords = monthSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -168,11 +179,14 @@ async function loadData() {
     // Load saved reports
     await loadSavedReports();
 
+    isLoading = false;
     updateStats();
     renderPage();
   } catch (error) {
     console.error('Error loading data:', error);
+    isLoading = false;
     showToast('هەڵە لە بارکردنی داتا', 'error');
+    renderPage();
   }
 }
 
@@ -207,10 +221,10 @@ function renderPage() {
   
   if (!currentUser) {
     main.innerHTML = `
-      <div class="loading" style="flex-direction:column;gap:16px;text-align:center;padding:40px">
-        <span style="font-size:48px">🔐</span>
-        <p>تکایە بچۆرە ژوورەوە</p>
-        <button class="action-btn primary" onclick="login()" style="padding:12px 24px">
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:40px;text-align:center">
+        <span style="font-size:64px">🔐</span>
+        <p style="font-size:16px;color:var(--text-secondary)">تکایە بچۆرە ژوورەوە</p>
+        <button class="action-btn primary" onclick="login()" style="padding:12px 24px;font-size:14px">
           چوونەژوورەوە بە Google
         </button>
       </div>
@@ -218,30 +232,51 @@ function renderPage() {
     return;
   }
   
-  switch(currentPage) {
-    case 'daily':
-      main.innerHTML = renderDailyPage();
-      break;
-    case 'dashboard':
-      main.innerHTML = renderDashboardPage();
-      break;
-    case 'weekly':
-      main.innerHTML = renderWeeklyPage();
-      break;
-    case 'monthly':
-      main.innerHTML = renderMonthlyPage();
-      break;
-    case 'analytics':
-      main.innerHTML = renderAnalyticsPage();
-      break;
-    case 'reports':
-      main.innerHTML = renderReportsPage();
-      break;
-    case 'settings':
-      main.innerHTML = renderSettingsPage();
-      break;
-    default:
-      main.innerHTML = renderDailyPage();
+  if (isLoading) {
+    main.innerHTML = `
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:40px">
+        <div class="spinner"></div>
+        <p style="color:var(--text-secondary)">تکایە چاوەڕێ بکە ...</p>
+      </div>
+    `;
+    return;
+  }
+  
+  try {
+    switch(currentPage) {
+      case 'daily':
+        main.innerHTML = renderDailyPage();
+        break;
+      case 'dashboard':
+        main.innerHTML = renderDashboardPage();
+        break;
+      case 'weekly':
+        main.innerHTML = renderWeeklyPage();
+        break;
+      case 'monthly':
+        main.innerHTML = renderMonthlyPage();
+        break;
+      case 'analytics':
+        main.innerHTML = renderAnalyticsPage();
+        break;
+      case 'reports':
+        main.innerHTML = renderReportsPage();
+        break;
+      case 'settings':
+        main.innerHTML = renderSettingsPage();
+        break;
+      default:
+        main.innerHTML = renderDailyPage();
+    }
+  } catch (error) {
+    console.error('Render error:', error);
+    main.innerHTML = `
+      <div style="text-align:center;padding:40px;color:var(--danger)">
+        <span style="font-size:48px">⚠️</span>
+        <p>هەڵە لە پیشاندانی پەڕە</p>
+        <button class="action-btn" onclick="loadData()" style="margin-top:16px">هەوڵدانەوە</button>
+      </div>
+    `;
   }
 }
 
@@ -282,6 +317,7 @@ function renderDailyPage() {
 
 function renderAgeSection(diseaseId) {
   const disease = DISEASES.find(d => d.id === diseaseId);
+  if (!disease) return '';
   
   return `
     <div class="age-section">
@@ -356,9 +392,13 @@ function renderTodayLog() {
   todayRecords.forEach(record => {
     const key = `${record.disease}-${record.ageGroup}-${record.gender}`;
     if (!grouped[key]) {
+      const disease = DISEASES.find(d => d.id === record.disease);
+      const ageGroup = AGE_GROUPS.find(a => a.id === record.ageGroup);
+      if (!disease || !ageGroup) return;
+      
       grouped[key] = {
-        disease: DISEASES.find(d => d.id === record.disease),
-        ageGroup: AGE_GROUPS.find(a => a.id === record.ageGroup),
+        disease: disease,
+        ageGroup: ageGroup,
         gender: record.gender,
         count: 0
       };
@@ -388,8 +428,10 @@ function renderDashboardPage() {
   const diseaseStats = {};
   todayRecords.forEach(record => {
     if (!diseaseStats[record.disease]) {
+      const disease = DISEASES.find(d => d.id === record.disease);
+      if (!disease) return;
       diseaseStats[record.disease] = {
-        disease: DISEASES.find(d => d.id === record.disease),
+        disease: disease,
         count: 0
       };
     }
@@ -442,6 +484,7 @@ function renderDashboardPage() {
       <div class="log-list">
         ${todayRecords.slice(0, 5).map(record => {
           const disease = DISEASES.find(d => d.id === record.disease);
+          if (!disease) return '';
           return `
             <div class="log-item">
               <div class="log-item-info">
@@ -466,23 +509,49 @@ function renderWeeklyPage() {
   
   const weekStartStr = formatDateShort(firstDayOfWeek);
   const weekEndStr = formatDateShort(lastDayOfWeek);
+  const weekNumber = getWeekNumber(firstDayOfWeek);
+  
+  // Create week options dropdown
+  const weekOptions = [];
+  for (let i = 0; i < 12; i++) {
+    const date = new Date(selectedDate);
+    date.setDate(date.getDate() - (i * 7));
+    const firstDay = getFirstDayOfWeek(date);
+    const lastDay = new Date(firstDay);
+    lastDay.setDate(firstDay.getDate() + 6);
+    const weekNum = getWeekNumber(firstDay);
+    const startStr = formatDateShort(firstDay);
+    const endStr = formatDateShort(lastDay);
+    
+    weekOptions.push({
+      weekNum: weekNum,
+      startDate: firstDay,
+      endDate: lastDay,
+      display: `Week ${weekNum} - ${startStr} - ${endStr}`
+    });
+  }
   
   let weekHtml = `
     <div class="summary-card" style="margin-bottom:16px">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <h4 style="color:var(--primary)">📅 هەفتەی ${getWeekNumber(selectedDate)}</h4>
-        <div style="font-size:14px;background:var(--primary-light);padding:4px 12px;border-radius:20px">
-          ${weekStartStr} - ${weekEndStr}
-        </div>
+      <div style="margin-bottom:12px">
+        <label style="display:block;font-size:12px;color:var(--text-secondary);margin-bottom:4px">Period</label>
+        <select id="weekSelect" style="width:100%;padding:10px;border-radius:var(--radius-md);border:1px solid var(--border-light);background:white" onchange="changeWeekBySelect(this.value)">
+          ${weekOptions.map(opt => `
+            <option value="${opt.weekNum}" ${opt.weekNum === weekNumber ? 'selected' : ''}>
+              Week ${opt.weekNum} - ${opt.startDate} - ${opt.endDate}
+            </option>
+          `).join('')}
+        </select>
       </div>
-      <div style="display:flex;gap:12px;margin-top:8px">
-        <button class="action-btn" onclick="changeWeek(-1)" style="flex:1">‹ هەفتەی پێشوو</button>
-        <button class="action-btn" onclick="changeWeek(1)" style="flex:1">هەفتەی داهاتوو ›</button>
+      
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
+        <button class="action-btn" onclick="changeWeek(-1)" style="flex:1;margin-left:4px">‹ Prev week</button>
+        <button class="action-btn" onclick="changeWeek(1)" style="flex:1">Next week ›</button>
       </div>
     </div>
   `;
   
-  // Week days
+  // Week days display
   weekHtml += '<div class="week-stats" style="margin-bottom:16px">';
   
   for (let i = 0; i < 7; i++) {
@@ -509,8 +578,10 @@ function renderWeeklyPage() {
   const diseaseStats = {};
   weekRecords.forEach(record => {
     if (!diseaseStats[record.disease]) {
+      const disease = DISEASES.find(d => d.id === record.disease);
+      if (!disease) return;
       diseaseStats[record.disease] = {
-        disease: DISEASES.find(d => d.id === record.disease),
+        disease: disease,
         male: 0,
         female: 0,
         total: 0
@@ -530,15 +601,15 @@ function renderWeeklyPage() {
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center">
         <div>
           <div style="font-size:20px;font-weight:800;color:var(--primary)">${totalWeek}</div>
-          <div style="font-size:11px">کۆی گشتی</div>
+          <div style="font-size:11px">Total</div>
         </div>
         <div>
           <div style="font-size:20px;font-weight:800;color:var(--male)">${maleTotal}</div>
-          <div style="font-size:11px">نێر</div>
+          <div style="font-size:11px">Male</div>
         </div>
         <div>
           <div style="font-size:20px;font-weight:800;color:var(--female)">${femaleTotal}</div>
-          <div style="font-size:11px">مێ</div>
+          <div style="font-size:11px">Female</div>
         </div>
       </div>
     </div>
@@ -547,14 +618,14 @@ function renderWeeklyPage() {
   weekHtml += `
     <div class="log-section">
       <div class="log-header">
-        <span class="log-title">📋 پێکهاتەی نەخۆشییەکان</span>
+        <span class="log-title">📋 Diseases breakdown</span>
         <span class="log-total">${weekRecords.length}</span>
       </div>
       <div class="log-list" style="max-height:300px">
   `;
   
   if (Object.values(diseaseStats).length === 0) {
-    weekHtml += '<div class="text-center" style="padding:30px">هیچ تۆمارێک نیە</div>';
+    weekHtml += '<div class="text-center" style="padding:30px">No records</div>';
   } else {
     Object.values(diseaseStats).forEach(stat => {
       weekHtml += `
@@ -598,15 +669,15 @@ function renderMonthlyPage() {
 
   let monthHtml = `
     <div class="summary-card" style="margin-bottom:16px">
-      <div style="display:flex;justify-content:space-between;align-items:center">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
         <h4 style="color:var(--primary)">${months[month]} ${year}</h4>
         <div style="font-size:14px;background:var(--primary-light);padding:4px 12px;border-radius:20px">
-          ${monthRecords.length} تۆمار
+          ${monthRecords.length} records
         </div>
       </div>
       <div style="display:flex;gap:12px;margin-top:8px">
-        <button class="action-btn" onclick="changeMonth(-1)" style="flex:1">‹ مانگی پێشوو</button>
-        <button class="action-btn" onclick="changeMonth(1)" style="flex:1">مانگی داهاتوو ›</button>
+        <button class="action-btn" onclick="changeMonth(-1)" style="flex:1">‹ Prev month</button>
+        <button class="action-btn" onclick="changeMonth(1)" style="flex:1">Next month ›</button>
       </div>
     </div>
     
@@ -647,8 +718,10 @@ function renderMonthlyPage() {
   const diseaseStats = {};
   monthRecords.forEach(record => {
     if (!diseaseStats[record.disease]) {
+      const disease = DISEASES.find(d => d.id === record.disease);
+      if (!disease) return;
       diseaseStats[record.disease] = {
-        disease: DISEASES.find(d => d.id === record.disease),
+        disease: disease,
         count: 0
       };
     }
@@ -663,15 +736,15 @@ function renderMonthlyPage() {
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center">
         <div>
           <div style="font-size:20px;font-weight:800;color:var(--primary)">${monthRecords.length}</div>
-          <div style="font-size:11px">کۆی گشتی</div>
+          <div style="font-size:11px">Total</div>
         </div>
         <div>
           <div style="font-size:20px;font-weight:800;color:var(--male)">${maleCount}</div>
-          <div style="font-size:11px">نێر</div>
+          <div style="font-size:11px">Male</div>
         </div>
         <div>
           <div style="font-size:20px;font-weight:800;color:var(--female)">${femaleCount}</div>
-          <div style="font-size:11px">مێ</div>
+          <div style="font-size:11px">Female</div>
         </div>
       </div>
     </div>
@@ -680,14 +753,14 @@ function renderMonthlyPage() {
   monthHtml += `
     <div class="log-section">
       <div class="log-header">
-        <span class="log-title">📊 پوختەی مانگ</span>
+        <span class="log-title">📊 Monthly summary</span>
         <span class="log-total">${monthRecords.length}</span>
       </div>
       <div class="log-list" style="max-height:300px">
   `;
   
   if (Object.values(diseaseStats).length === 0) {
-    monthHtml += '<div class="text-center" style="padding:30px">هیچ تۆمارێک نیە</div>';
+    monthHtml += '<div class="text-center" style="padding:30px">No records</div>';
   } else {
     Object.values(diseaseStats).sort((a, b) => b.count - a.count).forEach(stat => {
       monthHtml += `
@@ -727,8 +800,10 @@ function renderAnalyticsPage() {
   const diseaseStats = {};
   recentRecords.forEach(record => {
     if (!diseaseStats[record.disease]) {
+      const disease = DISEASES.find(d => d.id === record.disease);
+      if (!disease) return;
       diseaseStats[record.disease] = {
-        disease: DISEASES.find(d => d.id === record.disease),
+        disease: disease,
         count: 0
       };
     }
@@ -739,26 +814,26 @@ function renderAnalyticsPage() {
 
   return `
     <div class="summary-card">
-      <h4 style="margin-bottom:12px">📊 شیکردنەوەی ٣٠ ڕۆژی ڕابردوو</h4>
-      <p>کۆی گشتی: <strong>${total}</strong> حاڵەت</p>
-      <p>تێکڕای ڕۆژانە: <strong>${Math.round(total / 30)}</strong></p>
+      <h4 style="margin-bottom:12px">📊 Last 30 days analysis</h4>
+      <p>Total cases: <strong>${total}</strong></p>
+      <p>Daily average: <strong>${Math.round(total / 30)}</strong></p>
     </div>
 
     <div class="dashboard-grid" style="margin-bottom:16px">
       <div class="dashboard-card" style="background:var(--male-light)">
         <div class="dashboard-icon">👨</div>
         <div class="dashboard-value">${maleCount}</div>
-        <div class="dashboard-label">نێر ${malePercent}%</div>
+        <div class="dashboard-label">Male ${malePercent}%</div>
       </div>
       <div class="dashboard-card" style="background:var(--female-light)">
         <div class="dashboard-icon">👩</div>
         <div class="dashboard-value">${femaleCount}</div>
-        <div class="dashboard-label">مێ ${femalePercent}%</div>
+        <div class="dashboard-label">Female ${femalePercent}%</div>
       </div>
     </div>
 
     <div class="summary-card">
-      <h4 style="margin-bottom:12px">🔝 پێنج نەخۆشی باو</h4>
+      <h4 style="margin-bottom:12px">🔝 Top 5 diseases</h4>
       <div class="log-list">
         ${topDiseases.map((disease, index) => `
           <div class="log-item">
@@ -774,7 +849,7 @@ function renderAnalyticsPage() {
     </div>
 
     <div class="summary-card">
-      <h4 style="margin-bottom:12px">📊 پێکهاتەی تەمەنەکان</h4>
+      <h4 style="margin-bottom:12px">📊 Age distribution</h4>
       <div class="log-list">
         ${AGE_GROUPS.map(age => {
           const count = recentRecords.filter(r => r.ageGroup === age.id).length;
@@ -795,9 +870,9 @@ function renderAnalyticsPage() {
 function renderReportsPage() {
   return `
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-      <h3 style="color:var(--primary)">📋 ڕاپۆرتە پاشەکەوتکراوەکان</h3>
+      <h3 style="color:var(--primary)">📋 Saved reports</h3>
       <button class="action-btn primary" onclick="createNewReport()" style="padding:8px 12px">
-        <span>➕ نوێ</span>
+        <span>➕ New</span>
       </button>
     </div>
 
@@ -805,16 +880,16 @@ function renderReportsPage() {
       ${savedReports.length === 0 ? `
         <div style="text-align:center;padding:40px;color:var(--text-secondary)">
           <span style="font-size:48px;display:block;margin-bottom:16px">📭</span>
-          <p>هیچ ڕاپۆرتێک پاشەکەوت نەکراوە</p>
+          <p>No saved reports</p>
           <button class="action-btn primary" onclick="createNewReport()" style="margin-top:16px;padding:12px 24px">
-            دروستکردنی یەکەم ڕاپۆرت
+            Create first report
           </button>
         </div>
       ` : savedReports.map(report => `
         <div class="report-item">
           <div class="report-info" onclick="viewReport('${report.id}')">
-            <h4>${report.title || 'ڕاپۆرت'}</h4>
-            <p>${report.date || formatDate(new Date())} · ${report.count || 0} تۆمار</p>
+            <h4>${report.title || 'Report'}</h4>
+            <p>${report.date || formatDate(new Date())} · ${report.count || 0} records</p>
           </div>
           <div style="display:flex;gap:8px">
             <span class="report-icon" onclick="downloadReport('${report.id}')">📥</span>
@@ -836,41 +911,36 @@ function renderSettingsPage() {
   return `
     <div class="settings-list">
       <div class="setting-item">
-        <span class="setting-label">👤 ناوی بەکارهێنەر</span>
-        <span class="setting-value">${currentUser?.displayName || 'بەکارهێنەر'}</span>
+        <span class="setting-label">👤 User name</span>
+        <span class="setting-value">${currentUser?.displayName || 'User'}</span>
       </div>
       <div class="setting-item">
-        <span class="setting-label">📧 ئیمەیل</span>
+        <span class="setting-label">📧 Email</span>
         <span class="setting-value">${currentUser?.email || '-'}</span>
       </div>
       
       <div class="setting-item" onclick="toggleSetting('theme')">
-        <span class="setting-label">🌙 ڕەنگی ڕووکار</span>
-        <span class="setting-value">${settings.theme === 'dark' ? 'تاریک' : 'ڕووناک'}</span>
+        <span class="setting-label">🌙 Theme</span>
+        <span class="setting-value">${settings.theme === 'dark' ? 'Dark' : 'Light'}</span>
       </div>
       
       <div class="setting-item" onclick="toggleSetting('notifications')">
-        <span class="setting-label">🔔 ئاگادارکردنەوە</span>
-        <span class="setting-value">${settings.notifications ? 'چالاک' : 'ناچالاک'}</span>
+        <span class="setting-label">🔔 Notifications</span>
+        <span class="setting-value">${settings.notifications ? 'On' : 'Off'}</span>
       </div>
       
       <div class="setting-item" onclick="toggleSetting('sound')">
-        <span class="setting-label">🔊 دەنگ</span>
-        <span class="setting-value">${settings.sound ? 'چالاک' : 'ناچالاک'}</span>
+        <span class="setting-label">🔊 Sound</span>
+        <span class="setting-value">${settings.sound ? 'On' : 'Off'}</span>
       </div>
       
       <div class="setting-item" onclick="exportAllData()">
-        <span class="setting-label">📤 هەناردەی هەموو داتاکان</span>
+        <span class="setting-label">📤 Export all data</span>
         <span class="setting-value">⬇️</span>
       </div>
       
-      <div class="setting-item" onclick="showBackupOptions()">
-        <span class="setting-label">💾 پشتیوانی</span>
-        <span class="setting-value">↻</span>
-      </div>
-      
       <div class="setting-item" style="color:var(--danger)" onclick="logout()">
-        <span class="setting-label">🚪 دەرچوون</span>
+        <span class="setting-label">🚪 Logout</span>
         <span class="setting-value"></span>
       </div>
     </div>
@@ -885,12 +955,17 @@ window.selectDisease = function(diseaseId) {
 
 window.addRecord = async function(diseaseId, ageGroupId, genderId) {
   if (!currentUser) {
-    showToast('سەرەتا بچۆرە ژوورەوە', 'error');
+    showToast('Please login first', 'error');
     return;
   }
 
   const disease = DISEASES.find(d => d.id === diseaseId);
   const ageGroup = AGE_GROUPS.find(a => a.id === ageGroupId);
+  
+  if (!disease || !ageGroup) {
+    showToast('Invalid data', 'error');
+    return;
+  }
   
   const record = {
     disease: diseaseId,
@@ -918,10 +993,10 @@ window.addRecord = async function(diseaseId, ageGroupId, genderId) {
     updateStats();
     renderPage();
 
-    showToast(`✓ زیادکرا`, 'success');
+    showToast(`✓ Added`, 'success');
   } catch (error) {
     console.error('Error adding record:', error);
-    showToast('هەڵە لە تۆمارکردن', 'error');
+    showToast('Error adding record', 'error');
   }
 };
 
@@ -943,10 +1018,10 @@ window.decrementCount = async function(diseaseId, ageGroupId, genderId) {
     updateStats();
     renderPage();
 
-    showToast('✓ سڕایەوە', 'success');
+    showToast('✓ Deleted', 'success');
   } catch (error) {
     console.error('Error deleting record:', error);
-    showToast('هەڵە لە سڕینەوە', 'error');
+    showToast('Error deleting record', 'error');
   }
 };
 
@@ -970,7 +1045,9 @@ window.changePage = function(page) {
   selectedDisease = null;
   
   document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
-  event.currentTarget.classList.add('active');
+  if (event && event.currentTarget) {
+    event.currentTarget.classList.add('active');
+  }
   
   renderPage();
 };
@@ -983,6 +1060,22 @@ window.changeDate = function(delta) {
 
 window.changeWeek = function(delta) {
   selectedDate.setDate(selectedDate.getDate() + (delta * 7));
+  selectedDisease = null;
+  loadData();
+};
+
+window.changeWeekBySelect = function(weekNum) {
+  // Find a date in that week
+  const year = selectedDate.getFullYear();
+  const firstDayOfYear = new Date(year, 0, 1);
+  const daysOffset = (weekNum - 1) * 7;
+  const approxDate = new Date(year, 0, 1 + daysOffset);
+  
+  // Adjust to get the correct week
+  const firstDayOfWeek = getFirstDayOfWeek(approxDate);
+  selectedDate = new Date(firstDayOfWeek);
+  selectedDate.setDate(firstDayOfWeek.getDate() + 3); // Set to middle of week
+  
   selectedDisease = null;
   loadData();
 };
@@ -1004,12 +1097,15 @@ window.editDayRecords = function(dateStr) {
   
   // Update navigation
   document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
-  document.querySelectorAll('.nav-item')[0].classList.add('active');
+  const navItems = document.querySelectorAll('.nav-item');
+  if (navItems.length > 0) {
+    navItems[0].classList.add('active');
+  }
   
   // Reload data and render
   loadData();
   
-  showToast(`ڕۆژ ${formatDate(selectedDate)}`, 'success');
+  showToast(`Date: ${formatDate(selectedDate)}`, 'success');
 };
 
 // ==================== Export Functions ====================
@@ -1033,21 +1129,21 @@ window.exportCurrent = function() {
   
   const csv = convertToCSV(records);
   downloadFile(csv, fileName);
-  showToast('✓ هەناردە کرا', 'success');
+  showToast('✓ Exported', 'success');
 };
 
 window.exportAllData = function() {
-  showToast('بەم زووانە', 'info');
+  showToast('Coming soon', 'info');
 };
 
 function convertToCSV(records) {
-  const headers = ['ڕێکەوت', 'نەخۆشی', 'تەمەن', 'ڕەگەز', 'کات'];
+  const headers = ['Date', 'Disease', 'Age', 'Gender', 'Time'];
   const rows = records.map(r => [
     r.date,
     r.diseaseName,
     r.ageLabel,
-    r.gender === 'male' ? 'نێر' : 'مێ',
-    r.savedAt?.toDate?.().toLocaleTimeString('ku') || ''
+    r.gender === 'male' ? 'Male' : 'Female',
+    r.savedAt?.toDate?.().toLocaleTimeString() || ''
   ]);
   return [headers, ...rows].map(row => row.join(',')).join('\n');
 }
@@ -1062,7 +1158,7 @@ function downloadFile(content, fileName) {
 
 // ==================== Quick Entry Modal ====================
 window.showQuickEntryModal = function() {
-  showModal('⚡ تۆماری خێرا', `
+  showModal('⚡ Quick Entry', `
     <select id="quickDisease">
       ${DISEASES.map(d => `<option value="${d.id}">${d.icon} ${d.name}</option>`).join('')}
     </select>
@@ -1070,19 +1166,24 @@ window.showQuickEntryModal = function() {
       ${AGE_GROUPS.map(a => `<option value="${a.id}">${a.label} ${a.sub}</option>`).join('')}
     </select>
     <select id="quickGender">
-      <option value="male">👨 نێر</option>
-      <option value="female">👩 مێ</option>
+      <option value="male">👨 Male</option>
+      <option value="female">👩 Female</option>
     </select>
     <input type="number" id="quickCount" value="1" min="1" max="10">
-    <button class="action-btn primary" style="width:100%;margin-top:8px" onclick="quickAddRecords()">زیادکردن</button>
+    <button class="action-btn primary" style="width:100%;margin-top:8px" onclick="quickAddRecords()">Add</button>
   `);
 };
 
 window.quickAddRecords = function() {
-  const disease = document.getElementById('quickDisease').value;
-  const age = document.getElementById('quickAge').value;
-  const gender = document.getElementById('quickGender').value;
-  const count = parseInt(document.getElementById('quickCount').value);
+  const disease = document.getElementById('quickDisease')?.value;
+  const age = document.getElementById('quickAge')?.value;
+  const gender = document.getElementById('quickGender')?.value;
+  const count = parseInt(document.getElementById('quickCount')?.value || '1');
+
+  if (!disease || !age || !gender) {
+    showToast('Please select all fields', 'error');
+    return;
+  }
 
   for (let i = 0; i < count; i++) {
     addRecord(disease, age, gender);
@@ -1093,13 +1194,13 @@ window.quickAddRecords = function() {
 // ==================== Report Functions ====================
 window.createNewReport = function() {
   const reportTypes = [
-    { id: 'daily', name: 'ڕاپۆرتی ڕۆژانە', icon: '📋' },
-    { id: 'weekly', name: 'ڕاپۆرتی هەفتانە', icon: '📅' },
-    { id: 'monthly', name: 'ڕاپۆرتی مانگانە', icon: '📈' },
-    { id: 'custom', name: 'ڕاپۆرتی تایبەت', icon: '⚙️' }
+    { id: 'daily', name: 'Daily Report', icon: '📋' },
+    { id: 'weekly', name: 'Weekly Report', icon: '📅' },
+    { id: 'monthly', name: 'Monthly Report', icon: '📈' },
+    { id: 'custom', name: 'Custom Report', icon: '⚙️' }
   ];
   
-  showModal('دروستکردنی ڕاپۆرتی نوێ', `
+  showModal('Create New Report', `
     <div style="display:grid;gap:8px">
       ${reportTypes.map(type => `
         <button class="action-btn" style="justify-content:flex-start;padding:12px;width:100%" onclick="selectReportType('${type.id}')">
@@ -1119,13 +1220,16 @@ window.selectReportType = function(type) {
   
   if (type === 'daily') {
     records = todayRecords;
-    title = `ڕاپۆرتی ڕۆژانە - ${formatDate(selectedDate)}`;
+    title = `Daily Report - ${formatDate(selectedDate)}`;
   } else if (type === 'weekly') {
     records = weekRecords;
-    title = `ڕاپۆرتی هەفتانە - هەفتەی ${getWeekNumber(selectedDate)}`;
+    title = `Weekly Report - Week ${getWeekNumber(selectedDate)}`;
   } else if (type === 'monthly') {
     records = monthRecords;
-    title = `ڕاپۆرتی مانگانە - ${selectedDate.getMonth()+1}/${selectedDate.getFullYear()}`;
+    title = `Monthly Report - ${selectedDate.getMonth()+1}/${selectedDate.getFullYear()}`;
+  } else {
+    records = todayRecords;
+    title = `Custom Report - ${formatDate(new Date())}`;
   }
   
   saveReport(title, records);
@@ -1147,10 +1251,10 @@ async function saveReport(title, records) {
     await addDoc(collection(db, 'saved_reports'), report);
     await loadSavedReports();
     renderPage();
-    showToast('✓ ڕاپۆرت پاشەکەوت کرا', 'success');
+    showToast('✓ Report saved', 'success');
   } catch (error) {
     console.error('Error saving report:', error);
-    showToast('هەڵە لە پاشەکەوتکردن', 'error');
+    showToast('Error saving report', 'error');
   }
 }
 
@@ -1159,7 +1263,7 @@ window.viewReport = function(reportId) {
   if (!report) return;
   
   let detailsHtml = `<h3 style="margin-bottom:12px">${report.title}</h3>`;
-  detailsHtml += `<p style="margin-bottom:16px">ڕێکەوت: ${report.date} | کۆی تۆمار: ${report.count}</p>`;
+  detailsHtml += `<p style="margin-bottom:16px">Date: ${report.date} | Total: ${report.count}</p>`;
   
   if (report.data && report.data.length > 0) {
     detailsHtml += '<div class="log-list" style="max-height:300px">';
@@ -1183,7 +1287,7 @@ window.viewReport = function(reportId) {
     detailsHtml += '</div>';
   }
   
-  showModal('پیشاندانی ڕاپۆرت', detailsHtml);
+  showModal('View Report', detailsHtml);
 };
 
 window.downloadReport = function(reportId) {
@@ -1192,20 +1296,20 @@ window.downloadReport = function(reportId) {
   
   const csv = convertToCSV(report.data);
   downloadFile(csv, `report-${reportId}.csv`);
-  showToast('✓ داونلۆد کرا', 'success');
+  showToast('✓ Downloaded', 'success');
 };
 
 window.deleteReport = async function(reportId) {
-  if (!confirm('دڵنیایت دەتەوێت ئەم ڕاپۆرتە بسڕیتەوە؟')) return;
+  if (!confirm('Are you sure you want to delete this report?')) return;
   
   try {
     await deleteDoc(doc(db, 'saved_reports', reportId));
     await loadSavedReports();
     renderPage();
-    showToast('✓ ڕاپۆرت سڕایەوە', 'success');
+    showToast('✓ Report deleted', 'success');
   } catch (error) {
     console.error('Error deleting report:', error);
-    showToast('هەڵە لە سڕینەوە', 'error');
+    showToast('Error deleting report', 'error');
   }
 };
 
@@ -1227,16 +1331,8 @@ window.toggleSetting = function(setting) {
   }
   
   localStorage.setItem('appSettings', JSON.stringify(settings));
-  showToast('✓ ڕێکخستنەکان نوێکرانەوە', 'success');
+  showToast('✓ Settings updated', 'success');
   renderPage();
-};
-
-window.showBackupOptions = function() {
-  showModal('پشتیوانی', `
-    <p style="margin-bottom:16px">داتاکانت لە Firebase پارێزراون</p>
-    <button class="action-btn" style="width:100%;margin-bottom:8px" onclick="exportAllData()">📥 هەناردەی هەموو داتاکان</button>
-    <button class="action-btn" style="width:100%" onclick="alert('بەم زووانە')">📤 گەڕاندنەوەی داتا</button>
-  `);
 };
 
 // ==================== Initialize ====================

@@ -1500,8 +1500,8 @@ window.exportWeeklyPDF = function() {
         <tr>
           <th rowspan="2" style="background:#0a4d3b;color:white;padding:6px;border:1px solid #ccc;min-width:100px">نەخۆشی</th>
           ${ageHeadersHtml}
-          <th style="background:#185fa5;color:white;padding:4px;font-size:10px;border:1px solid #ccc">کۆ ن</th>
-          <th style="background:#b33a6a;color:white;padding:4px;font-size:10px;border:1px solid #ccc">کۆ م</th>
+          <th style="background:#185fa5;color:white;padding:4px;font-size:10px;border:1px solid #ccc">کۆى نێر</th>
+          <th style="background:#b33a6a;color:white;padding:4px;font-size:10px;border:1px solid #ccc">کۆى مێ</th>
           <th style="background:#0f6e56;color:white;padding:4px;font-size:10px;border:1px solid #ccc">کۆی گشتی</th>
         </tr>
         <tr>${ageSubHeadersHtml}<th></th><th></th><th></th></tr>

@@ -215,25 +215,23 @@ async function loadData() {
     const weekStartStr = formatDateShort(wFirst);
     const weekEndStr = formatDateShort(wLast);
 
-    let todayQ, weekQ, monthQ, yearQ;
+    // بار بکە — بەبێ Composite Index:
+    // ئەدمین: بەپێی ساڵ فلتەر بکە، پاشان JS فلتەر
+    // یوزەر: بەپێی userId فلتەر بکە، پاشان JS فلتەر
+    let baseQ;
     if (isAdmin) {
-      // ئەدمین — هەموو داتای هەموو نەخۆشخانەکان
-      todayQ = query(collection(db, 'daily_records'), where('date', '==', todayStr));
-      weekQ  = query(collection(db, 'daily_records'), where('date', '>=', weekStartStr), where('date', '<=', weekEndStr));
-      monthQ = query(collection(db, 'daily_records'), where('month', '==', selectedDate.getMonth() + 1), where('year', '==', year));
-      yearQ  = query(collection(db, 'daily_records'), where('year', '==', year));
+      baseQ = query(collection(db, 'daily_records'), where('year', '==', year));
     } else {
-      // نەخۆشخانە — تەنها داتای خۆی
-      todayQ = query(collection(db, 'daily_records'), where('date', '==', todayStr), where('userId', '==', currentUser.uid));
-      weekQ  = query(collection(db, 'daily_records'), where('date', '>=', weekStartStr), where('date', '<=', weekEndStr), where('userId', '==', currentUser.uid));
-      monthQ = query(collection(db, 'daily_records'), where('month', '==', selectedDate.getMonth() + 1), where('year', '==', year), where('userId', '==', currentUser.uid));
-      yearQ  = query(collection(db, 'daily_records'), where('year', '==', year), where('userId', '==', currentUser.uid));
+      baseQ = query(collection(db, 'daily_records'), where('userId', '==', currentUser.uid), where('year', '==', year));
     }
 
-    todayRecords = (await getDocs(todayQ)).docs.map(d => ({ id: d.id, ...d.data() }));
-    weekRecords  = (await getDocs(weekQ)).docs.map(d => ({ id: d.id, ...d.data() }));
-    monthRecords = (await getDocs(monthQ)).docs.map(d => ({ id: d.id, ...d.data() }));
-    yearRecords  = (await getDocs(yearQ)).docs.map(d => ({ id: d.id, ...d.data() }));
+    const allYearDocs = (await getDocs(baseQ)).docs.map(d => ({ id: d.id, ...d.data() }));
+
+    // JS فلتەر — پێویستی بە Index نییە
+    todayRecords = allYearDocs.filter(r => r.date === todayStr);
+    weekRecords  = allYearDocs.filter(r => r.date >= weekStartStr && r.date <= weekEndStr);
+    monthRecords = allYearDocs.filter(r => r.month === selectedDate.getMonth() + 1);
+    yearRecords  = allYearDocs;
 
     // Load saved reports
     await loadSavedReports();

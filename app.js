@@ -82,6 +82,11 @@ let savedReports = [];
 let isLoading = false;
 let isAdmin = false;
 
+// ==================== Cache ====================
+let cachedYear = null;
+let cachedUserId = null;
+let allYearCache = [];
+
 // ==================== Helper Functions ====================
 function formatDate(date) {
   const months = ['١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩', '١٠', '١١', '١٢'];
@@ -208,22 +213,29 @@ async function loadData() {
     renderPage();
     return;
   }
-  
-  isLoading = true;
-  renderPage(); // Show loading state
-  
-  try {
-    const todayStr = formatDateShort(selectedDate);
-    
-    // Load today's records
-    const year = selectedDate.getFullYear();
-    const { firstDay: wFirst, lastDay: wLast } = getWeekRange(selectedDate);
-    const weekStartStr = formatDateShort(wFirst);
-    const weekEndStr = formatDateShort(wLast);
 
-    // بار بکە — بەبێ Composite Index:
-    // ئەدمین: بەپێی ساڵ فلتەر بکە، پاشان JS فلتەر
-    // یوزەر: بەپێی userId فلتەر بکە، پاشان JS فلتەر
+  const year = selectedDate.getFullYear();
+  const todayStr = formatDateShort(selectedDate);
+  const { firstDay: wFirst, lastDay: wLast } = getWeekRange(selectedDate);
+  const weekStartStr = formatDateShort(wFirst);
+  const weekEndStr = formatDateShort(wLast);
+
+  // ئەگەر داتای ئەم ساڵە کاشێکراوە — پێویستی بە Firebase نیە
+  const cacheValid = cachedYear === year && cachedUserId === (currentUser?.uid || '');
+  if (cacheValid) {
+    todayRecords = allYearCache.filter(r => r.date === todayStr);
+    weekRecords  = allYearCache.filter(r => r.date >= weekStartStr && r.date <= weekEndStr);
+    monthRecords = allYearCache.filter(r => r.month === selectedDate.getMonth() + 1);
+    yearRecords  = allYearCache;
+    updateStats();
+    renderPage();
+    return;
+  }
+
+  isLoading = true;
+  renderPage();
+
+  try {
     let baseQ;
     if (isAdmin) {
       baseQ = query(collection(db, 'daily_records'), where('year', '==', year));
@@ -233,13 +245,16 @@ async function loadData() {
 
     const allYearDocs = (await getDocs(baseQ)).docs.map(d => ({ id: d.id, ...d.data() }));
 
-    // JS فلتەر — پێویستی بە Index نییە
+    // کاش بکە
+    allYearCache = allYearDocs;
+    cachedYear = year;
+    cachedUserId = currentUser?.uid || '';
+
     todayRecords = allYearDocs.filter(r => r.date === todayStr);
     weekRecords  = allYearDocs.filter(r => r.date >= weekStartStr && r.date <= weekEndStr);
     monthRecords = allYearDocs.filter(r => r.month === selectedDate.getMonth() + 1);
     yearRecords  = allYearDocs;
 
-    // Load saved reports
     await loadSavedReports();
 
     isLoading = false;
@@ -1199,6 +1214,7 @@ window.addRecord = async function(diseaseId, ageGroupId, genderId) {
     weekRecords.push(record);
     monthRecords.push(record);
     yearRecords.push(record);
+    allYearCache.push(record);
 
     updateGenderCount(diseaseId, ageGroupId, genderId);
     updateStats();
@@ -1220,11 +1236,12 @@ window.decrementCount = async function(diseaseId, ageGroupId, genderId) {
 
   try {
     await deleteDoc(doc(db, 'daily_records', recordsToDelete[0].id));
-    
-    todayRecords = todayRecords.filter(r => r.id !== recordsToDelete[0].id);
-    weekRecords = weekRecords.filter(r => r.id !== recordsToDelete[0].id);
-    monthRecords = monthRecords.filter(r => r.id !== recordsToDelete[0].id);
-    yearRecords = yearRecords.filter(r => r.id !== recordsToDelete[0].id);
+    const delId = recordsToDelete[0].id;
+    todayRecords = todayRecords.filter(r => r.id !== delId);
+    weekRecords = weekRecords.filter(r => r.id !== delId);
+    monthRecords = monthRecords.filter(r => r.id !== delId);
+    yearRecords = yearRecords.filter(r => r.id !== delId);
+    allYearCache = allYearCache.filter(r => r.id !== delId);
 
     updateGenderCount(diseaseId, ageGroupId, genderId);
     updateStats();

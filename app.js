@@ -228,6 +228,16 @@ function updateHeader() {
         '<span style="font-size:11px;background:rgba(255,255,255,0.25);padding:2px 8px;border-radius:10px;margin-right:8px">' +
         currentUser.username + '</span>';
     }
+    // ئەگەر ئەدمینە — دوگمەی نەخۆشخانەکان زیاد بکە
+    const navMenu = document.getElementById('navMenu');
+    if (navMenu && isAdmin && !navMenu.querySelector('[data-page="hospitals"]')) {
+      const btn = document.createElement('button');
+      btn.className = 'nav-item';
+      btn.setAttribute('data-page', 'hospitals');
+      btn.textContent = '🏥 نەخۆشخانەکان';
+      btn.onclick = function() { changePage('hospitals', this); };
+      navMenu.appendChild(btn);
+    }
   }
 }
 
@@ -389,6 +399,9 @@ function renderPage() {
       case 'settings':
         main.innerHTML = renderSettingsPage();
         break;
+      case 'hospitals':
+        main.innerHTML = renderHospitalsPage();
+        break;
       default:
         main.innerHTML = renderDailyPage();
     }
@@ -511,7 +524,54 @@ function renderTodayLog() {
     return '<div class="text-center" style="padding:30px;color:var(--text-secondary)">هیچ تۆمارێک نیە</div>';
   }
 
-  // Group records by disease, age, and gender
+  // ئەگەر ئەدمینە — بەپێی نەخۆشخانە گروپ بکە
+  if (isAdmin) {
+    const byHospital = {};
+    todayRecords.forEach(r => {
+      const hName = r.hospitalName || r.userId || '?';
+      if (!byHospital[hName]) byHospital[hName] = [];
+      byHospital[hName].push(r);
+    });
+
+    return Object.entries(byHospital).map(([hospital, records]) => {
+      // Group by disease inside each hospital
+      const grouped = {};
+      records.forEach(record => {
+        const key = `${record.disease}-${record.ageGroup}-${record.gender}`;
+        if (!grouped[key]) {
+          const disease = DISEASES.find(d => d.id === record.disease);
+          const ageGroup = AGE_GROUPS.find(a => a.id === record.ageGroup);
+          if (!disease || !ageGroup) return;
+          grouped[key] = { disease, ageGroup, gender: record.gender, count: 0 };
+        }
+        grouped[key].count++;
+      });
+
+      return `
+        <div style="margin-bottom:8px">
+          <div style="background:var(--primary);color:white;padding:5px 10px;border-radius:var(--radius-sm) var(--radius-sm) 0 0;font-size:12px;font-weight:700;display:flex;justify-content:space-between">
+            <span>🏥 ${hospital}</span>
+            <span>${records.length} تۆمار</span>
+          </div>
+          <div style="border:1px solid var(--primary);border-top:none;border-radius:0 0 var(--radius-sm) var(--radius-sm);overflow:hidden">
+            ${Object.values(grouped).map(group => `
+              <div class="log-item" style="border-radius:0">
+                <div class="log-item-info">
+                  <span class="log-dot" style="background:${group.disease.color}"></span>
+                  <span>${group.disease.icon} ${group.disease.name}</span>
+                  <span class="gender-badge ${group.gender}">${group.gender === 'male' ? '👨' : '👩'}</span>
+                  <span>${group.ageGroup.label}</span>
+                </div>
+                <span class="log-count">${group.count}</span>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // یوزەری ئاسایی — گروپ بەپێی نەخۆشی
   const grouped = {};
   todayRecords.forEach(record => {
     const key = `${record.disease}-${record.ageGroup}-${record.gender}`;
@@ -519,13 +579,7 @@ function renderTodayLog() {
       const disease = DISEASES.find(d => d.id === record.disease);
       const ageGroup = AGE_GROUPS.find(a => a.id === record.ageGroup);
       if (!disease || !ageGroup) return;
-      
-      grouped[key] = {
-        disease: disease,
-        ageGroup: ageGroup,
-        gender: record.gender,
-        count: 0
-      };
+      grouped[key] = { disease, ageGroup, gender: record.gender, count: 0 };
     }
     grouped[key].count++;
   });
@@ -554,15 +608,35 @@ function renderDashboardPage() {
     if (!diseaseStats[record.disease]) {
       const disease = DISEASES.find(d => d.id === record.disease);
       if (!disease) return;
-      diseaseStats[record.disease] = {
-        disease: disease,
-        count: 0
-      };
+      diseaseStats[record.disease] = { disease: disease, count: 0 };
     }
     diseaseStats[record.disease].count++;
   });
 
+  // ئەگەر ئەدمینە — خلاصەی نەخۆشخانەکان زیاد بکە
+  const hospitalSummaryHtml = isAdmin ? (() => {
+    const byHospital = {};
+    todayRecords.forEach(r => {
+      const h = r.hospitalName || r.userId || '?';
+      if (!byHospital[h]) byHospital[h] = 0;
+      byHospital[h]++;
+    });
+    if (Object.keys(byHospital).length === 0) return '';
+    return `
+      <div class="summary-card" style="margin-bottom:12px">
+        <h4 style="margin-bottom:10px;font-size:13px">🏥 تۆماری ئەمڕۆ بەپێی نەخۆشخانە</h4>
+        ${Object.entries(byHospital).map(([h, count]) => `
+          <div class="log-item">
+            <span style="font-size:13px">${h}</span>
+            <span class="log-count">${count}</span>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  })() : '';
+
   return `
+    ${hospitalSummaryHtml}
     <div class="dashboard-grid">
       <div class="dashboard-card">
         <div class="dashboard-icon">📊</div>
@@ -1148,6 +1222,72 @@ function renderReportsPage() {
       `).join('')}
     </div>
   `;
+}
+
+function renderHospitalsPage() {
+  const hospitals = USER_REGISTRY.filter(u => !u.isAdmin);
+  const todayStr = formatDateShort(selectedDate);
+
+  return `
+    <div style="margin-bottom:12px">
+      <h3 style="color:var(--primary);font-size:15px">🏥 ئاماری نەخۆشخانەکان — ${todayStr}</h3>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      ${hospitals.map(h => {
+        const hRecords = yearRecords.filter(r => r.userId === h.username);
+        const todayCount  = hRecords.filter(r => r.date === todayStr).length;
+        const { firstDay: wf, lastDay: wl } = getWeekRange(selectedDate);
+        const weekCount   = hRecords.filter(r => r.date >= formatDateShort(wf) && r.date <= formatDateShort(wl)).length;
+        const monthCount  = hRecords.filter(r => r.month === selectedDate.getMonth() + 1).length;
+        const yearCount   = hRecords.length;
+
+        // Disease breakdown for today
+        const diseaseBreak = {};
+        hRecords.filter(r => r.date === todayStr).forEach(r => {
+          diseaseBreak[r.diseaseName] = (diseaseBreak[r.diseaseName] || 0) + 1;
+        });
+
+        return \`
+          <div style="background:white;border-radius:var(--radius-lg);border:1px solid var(--border-light);overflow:hidden">
+            <div style="background:var(--primary);color:white;padding:10px 14px;display:flex;justify-content:space-between;align-items:center">
+              <span style="font-weight:700;font-size:14px">🏥 \${h.hospitalName}</span>
+              <span style="background:rgba(255,255,255,0.2);padding:2px 10px;border-radius:20px;font-size:13px">\${todayCount} ئەمڕۆ</span>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-bottom:1px solid var(--border-light)">
+              <div style="text-align:center;padding:8px 4px;border-left:1px solid var(--border-light)">
+                <div style="font-size:18px;font-weight:800;color:var(--primary)">\${todayCount}</div>
+                <div style="font-size:10px;color:var(--text-secondary)">ئەمڕۆ</div>
+              </div>
+              <div style="text-align:center;padding:8px 4px;border-left:1px solid var(--border-light)">
+                <div style="font-size:18px;font-weight:800;color:var(--primary)">\${weekCount}</div>
+                <div style="font-size:10px;color:var(--text-secondary)">هەفتە</div>
+              </div>
+              <div style="text-align:center;padding:8px 4px;border-left:1px solid var(--border-light)">
+                <div style="font-size:18px;font-weight:800;color:var(--primary)">\${monthCount}</div>
+                <div style="font-size:10px;color:var(--text-secondary)">مانگ</div>
+              </div>
+              <div style="text-align:center;padding:8px 4px">
+                <div style="font-size:18px;font-weight:800;color:var(--primary)">\${yearCount}</div>
+                <div style="font-size:10px;color:var(--text-secondary)">ساڵ</div>
+              </div>
+            </div>
+            \${Object.keys(diseaseBreak).length > 0 ? \`
+              <div style="padding:8px 12px">
+                <div style="font-size:11px;color:var(--text-secondary);margin-bottom:6px">تۆماری ئەمڕۆ بەپێی نەخۆشی:</div>
+                <div style="display:flex;flex-wrap:wrap;gap:4px">
+                  \${Object.entries(diseaseBreak).map(([name, count]) => \`
+                    <span style="background:var(--primary-light);color:var(--primary);padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600">
+                      \${name}: \${count}
+                    </span>
+                  \`).join('')}
+                </div>
+              </div>
+            \` : \`<div style="padding:10px 12px;font-size:12px;color:var(--text-secondary)">هیچ تۆمارێک نیە ئەمڕۆ</div>\`}
+          </div>
+        \`;
+      }).join('')}
+    </div>
+  \`;
 }
 
 function renderSettingsPage() {

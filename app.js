@@ -17,14 +17,20 @@ const db = getFirestore(app);
 
 // ==================== Constants ====================
 const DISEASES = [
-  { id: 'malaria', name: 'ئاکەڵی', icon: '🦟', color: '#E85D24' },
-  { id: 'typhoid', name: 'تیفۆیید', icon: '🌡️', color: '#BA7517' },
-  { id: 'tb', name: 'سل', icon: '🫁', color: '#534AB7' },
-  { id: 'cholera', name: 'کولێرا', icon: '💧', color: '#0F6E56' },
-  { id: 'bloody', name: 'دیاریای خوێناوی', icon: '🩸', color: '#A32D2D' },
-  { id: 'hepatitisA', name: 'هەپاتایتس A', icon: '🩺', color: '#185FA5' },
-  { id: 'covid', name: 'کۆڤید-١٩', icon: '🦠', color: '#3B6D11' },
-  { id: 'measles', name: 'قیژنە', icon: '🤒', color: '#993556' }
+  { id: 'diarrhea_acute',   name: 'الاسهال الحاد',              icon: '🦠', color: '#E85D24' },
+  { id: 'diarrhea_bloody',  name: 'الإسهال الدموي الحاد',       icon: '🩸', color: '#A32D2D' },
+  { id: 'influenza_like',   name: 'المرض الشبيه بالانفلونزا',   icon: '🤒', color: '#BA7517' },
+  { id: 'pneumonia',        name: 'ذات الرئة',                  icon: '🫁', color: '#534AB7' },
+  { id: 'covid',            name: 'كوفيد19 (عزل منزلي)',        icon: '😷', color: '#3B6D11' },
+  { id: 'amoebiasis',       name: 'الزحار الاميبي',             icon: '🔬', color: '#0F6E56' },
+  { id: 'animal_bite',      name: 'عضة الحيوان',               icon: '🐾', color: '#8B4513' },
+  { id: 'mumps',            name: 'النكاف',                     icon: '😮', color: '#9932CC' },
+  { id: 'scabies',          name: 'الجرب',                      icon: '🔴', color: '#DC143C' },
+  { id: 'giardia',          name: 'الجيارديا',                  icon: '💧', color: '#185FA5' },
+  { id: 'pinworm',          name: 'الدودة الدبوسية',            icon: '🪱', color: '#6B8E23' },
+  { id: 'chickenpox',       name: 'الجدري المائي',              icon: '🌊', color: '#4682B4' },
+  { id: 'tinea',            name: 'السعفة (كافة الانواع)',       icon: '🍄', color: '#CD853F' },
+  { id: 'deaths',           name: 'الوفيات',                    icon: '🖤', color: '#2C2C2C' }
 ];
 
 const AGE_GROUPS = [

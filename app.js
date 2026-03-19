@@ -49,6 +49,7 @@ const AGE_GROUPS = [
 const USER_REGISTRY = [
   { username: 'admin',   password: 'admin123',  hospitalName: 'ئەدمین — هەموو نەخۆشخانەکان', isAdmin: true  },
   { username: 'fatih',   password: '123456',    hospitalName: 'مەڵبەندی تەندروستی شەهید فاتیح', isAdmin: false },
+  { username: 'hasan',   password: '123456',    hospitalName: 'مەڵبەندی تەندروستی شەهید امجد', isAdmin: false },
   // یوزەری تر زیاد بکە وەک ئەمە
 ];
 
@@ -1227,67 +1228,52 @@ function renderReportsPage() {
 function renderHospitalsPage() {
   const hospitals = USER_REGISTRY.filter(u => !u.isAdmin);
   const todayStr = formatDateShort(selectedDate);
+  const { firstDay: wf, lastDay: wl } = getWeekRange(selectedDate);
+  const weekStartStr = formatDateShort(wf);
+  const weekEndStr = formatDateShort(wl);
 
-  return `
-    <div style="margin-bottom:12px">
-      <h3 style="color:var(--primary);font-size:15px">🏥 ئاماری نەخۆشخانەکان — ${todayStr}</h3>
-    </div>
-    <div style="display:flex;flex-direction:column;gap:8px">
-      ${hospitals.map(h => {
-        const hRecords = yearRecords.filter(r => r.userId === h.username);
-        const todayCount  = hRecords.filter(r => r.date === todayStr).length;
-        const { firstDay: wf, lastDay: wl } = getWeekRange(selectedDate);
-        const weekCount   = hRecords.filter(r => r.date >= formatDateShort(wf) && r.date <= formatDateShort(wl)).length;
-        const monthCount  = hRecords.filter(r => r.month === selectedDate.getMonth() + 1).length;
-        const yearCount   = hRecords.length;
+  let html = '<div style="margin-bottom:12px"><h3 style="color:var(--primary);font-size:15px">🏥 ئاماری نەخۆشخانەکان — ' + todayStr + '</h3></div>';
+  html += '<div style="display:flex;flex-direction:column;gap:8px">';
 
-        // Disease breakdown for today
-        const diseaseBreak = {};
-        hRecords.filter(r => r.date === todayStr).forEach(r => {
-          diseaseBreak[r.diseaseName] = (diseaseBreak[r.diseaseName] || 0) + 1;
-        });
+  hospitals.forEach(function(h) {
+    const hRecords = yearRecords.filter(function(r) { return r.userId === h.username; });
+    const todayCount  = hRecords.filter(function(r) { return r.date === todayStr; }).length;
+    const weekCount   = hRecords.filter(function(r) { return r.date >= weekStartStr && r.date <= weekEndStr; }).length;
+    const monthCount  = hRecords.filter(function(r) { return r.month === selectedDate.getMonth() + 1; }).length;
+    const yearCount   = hRecords.length;
 
-        return \`
-          <div style="background:white;border-radius:var(--radius-lg);border:1px solid var(--border-light);overflow:hidden">
-            <div style="background:var(--primary);color:white;padding:10px 14px;display:flex;justify-content:space-between;align-items:center">
-              <span style="font-weight:700;font-size:14px">🏥 \${h.hospitalName}</span>
-              <span style="background:rgba(255,255,255,0.2);padding:2px 10px;border-radius:20px;font-size:13px">\${todayCount} ئەمڕۆ</span>
-            </div>
-            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-bottom:1px solid var(--border-light)">
-              <div style="text-align:center;padding:8px 4px;border-left:1px solid var(--border-light)">
-                <div style="font-size:18px;font-weight:800;color:var(--primary)">\${todayCount}</div>
-                <div style="font-size:10px;color:var(--text-secondary)">ئەمڕۆ</div>
-              </div>
-              <div style="text-align:center;padding:8px 4px;border-left:1px solid var(--border-light)">
-                <div style="font-size:18px;font-weight:800;color:var(--primary)">\${weekCount}</div>
-                <div style="font-size:10px;color:var(--text-secondary)">هەفتە</div>
-              </div>
-              <div style="text-align:center;padding:8px 4px;border-left:1px solid var(--border-light)">
-                <div style="font-size:18px;font-weight:800;color:var(--primary)">\${monthCount}</div>
-                <div style="font-size:10px;color:var(--text-secondary)">مانگ</div>
-              </div>
-              <div style="text-align:center;padding:8px 4px">
-                <div style="font-size:18px;font-weight:800;color:var(--primary)">\${yearCount}</div>
-                <div style="font-size:10px;color:var(--text-secondary)">ساڵ</div>
-              </div>
-            </div>
-            \${Object.keys(diseaseBreak).length > 0 ? \`
-              <div style="padding:8px 12px">
-                <div style="font-size:11px;color:var(--text-secondary);margin-bottom:6px">تۆماری ئەمڕۆ بەپێی نەخۆشی:</div>
-                <div style="display:flex;flex-wrap:wrap;gap:4px">
-                  \${Object.entries(diseaseBreak).map(([name, count]) => \`
-                    <span style="background:var(--primary-light);color:var(--primary);padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600">
-                      \${name}: \${count}
-                    </span>
-                  \`).join('')}
-                </div>
-              </div>
-            \` : \`<div style="padding:10px 12px;font-size:12px;color:var(--text-secondary)">هیچ تۆمارێک نیە ئەمڕۆ</div>\`}
-          </div>
-        \`;
-      }).join('')}
-    </div>
-  \`;
+    const diseaseBreak = {};
+    hRecords.filter(function(r) { return r.date === todayStr; }).forEach(function(r) {
+      diseaseBreak[r.diseaseName] = (diseaseBreak[r.diseaseName] || 0) + 1;
+    });
+
+    html += '<div style="background:white;border-radius:var(--radius-lg);border:1px solid var(--border-light);overflow:hidden">';
+    html += '<div style="background:var(--primary);color:white;padding:10px 14px;display:flex;justify-content:space-between;align-items:center">';
+    html += '<span style="font-weight:700;font-size:14px">🏥 ' + h.hospitalName + '</span>';
+    html += '<span style="background:rgba(255,255,255,0.2);padding:2px 10px;border-radius:20px;font-size:13px">' + todayCount + ' ئەمڕۆ</span>';
+    html += '</div>';
+    html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-bottom:1px solid var(--border-light)">';
+    html += '<div style="text-align:center;padding:8px 4px;border-left:1px solid var(--border-light)"><div style="font-size:18px;font-weight:800;color:var(--primary)">' + todayCount + '</div><div style="font-size:10px;color:var(--text-secondary)">ئەمڕۆ</div></div>';
+    html += '<div style="text-align:center;padding:8px 4px;border-left:1px solid var(--border-light)"><div style="font-size:18px;font-weight:800;color:var(--primary)">' + weekCount + '</div><div style="font-size:10px;color:var(--text-secondary)">هەفتە</div></div>';
+    html += '<div style="text-align:center;padding:8px 4px;border-left:1px solid var(--border-light)"><div style="font-size:18px;font-weight:800;color:var(--primary)">' + monthCount + '</div><div style="font-size:10px;color:var(--text-secondary)">مانگ</div></div>';
+    html += '<div style="text-align:center;padding:8px 4px"><div style="font-size:18px;font-weight:800;color:var(--primary)">' + yearCount + '</div><div style="font-size:10px;color:var(--text-secondary)">ساڵ</div></div>';
+    html += '</div>';
+
+    const diseaseKeys = Object.keys(diseaseBreak);
+    if (diseaseKeys.length > 0) {
+      html += '<div style="padding:8px 12px"><div style="font-size:11px;color:var(--text-secondary);margin-bottom:6px">تۆماری ئەمڕۆ بەپێی نەخۆشی:</div><div style="display:flex;flex-wrap:wrap;gap:4px">';
+      diseaseKeys.forEach(function(name) {
+        html += '<span style="background:var(--primary-light);color:var(--primary);padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600">' + name + ': ' + diseaseBreak[name] + '</span>';
+      });
+      html += '</div></div>';
+    } else {
+      html += '<div style="padding:10px 12px;font-size:12px;color:var(--text-secondary)">هیچ تۆمارێک نیە ئەمڕۆ</div>';
+    }
+    html += '</div>';
+  });
+
+  html += '</div>';
+  return html;
 }
 
 function renderSettingsPage() {

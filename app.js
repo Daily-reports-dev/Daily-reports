@@ -1247,7 +1247,7 @@ window.decrementCount = async function(diseaseId, ageGroupId, genderId) {
     updateStats();
     renderPage();
 
-    showToast('✓ سڕایەوە', 'success');
+    showToast('✓ کەمکرایەوە', 'success');
   } catch (error) {
     console.error('Error deleting record:', error);
     showToast('هەڵە لە سڕینەوە', 'error');

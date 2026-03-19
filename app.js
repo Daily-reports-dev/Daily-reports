@@ -1253,32 +1253,71 @@ function renderAnalyticsPage() {
 }
 
 function renderReportsPage() {
+  const { firstDay, lastDay } = getWeekRange(selectedDate);
+  const weekNum = getWeekNumber(selectedDate);
+  const weekStartStr = formatDateShort(firstDay);
+  const weekEndStr = formatDateShort(lastDay);
+  const weekDates = new Set();
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(firstDay); d.setDate(firstDay.getDate() + i);
+    weekDates.add(formatDateShort(d));
+  }
+  const thisWeekRecords = monthRecords.filter(r => weekDates.has(r.date));
+  const todayStr = formatDateShort(selectedDate);
+
   return `
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-      <h3 style="color:var(--primary)">📋 ڕاپۆرتە پاشەکەوتکراوەکان</h3>
-      <button class="action-btn primary" onclick="createNewReport()" style="padding:8px 12px">
-        <span>➕ نوێ</span>
+    <!-- بەشی هەناردەی خێرا -->
+    <div class="summary-card" style="margin-bottom:12px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+        <span style="font-size:18px">⚡</span>
+        <div>
+          <div style="font-weight:700;font-size:14px">هەناردەی خێرا</div>
+          <div style="font-size:11px;color:var(--text-secondary)">هەفتە ${weekNum} · ${weekStartStr} — ${weekEndStr} · ${thisWeekRecords.length} تۆمار</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <button onclick="exportWeeklyExcel()" style="background:var(--primary);color:white;border:none;border-radius:var(--radius-md);padding:14px 8px;cursor:pointer;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:6px">
+          <span style="font-size:18px">📊</span>
+          <span>Excel<br><small style="font-weight:400;font-size:10px">فۆرمی وەزارەت</small></span>
+        </button>
+        <button onclick="exportWeeklyPDF()" style="background:#534AB7;color:white;border:none;border-radius:var(--radius-md);padding:14px 8px;cursor:pointer;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:6px">
+          <span style="font-size:18px">📄</span>
+          <span>PDF<br><small style="font-weight:400;font-size:10px">فۆرمی وەزارەت</small></span>
+        </button>
+        <button onclick="exportDailyExcel()" style="background:var(--male);color:white;border:none;border-radius:var(--radius-md);padding:14px 8px;cursor:pointer;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:6px">
+          <span style="font-size:18px">📋</span>
+          <span>Excel ڕۆژانە<br><small style="font-weight:400;font-size:10px">${todayStr} · ${todayRecords.length} تۆمار</small></span>
+        </button>
+        <button onclick="exportCSV()" style="background:var(--bg-secondary);color:var(--text-primary);border:1px solid var(--border-medium);border-radius:var(--radius-md);padding:14px 8px;cursor:pointer;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:6px">
+          <span style="font-size:18px">💾</span>
+          <span>CSV خام<br><small style="font-weight:400;font-size:10px">داتای خام</small></span>
+        </button>
+      </div>
+    </div>
+
+    <!-- بەشی ڕاپۆرتە پاشەکەوتکراوەکان -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <span style="font-weight:700;font-size:14px;color:var(--primary)">📁 ڕاپۆرتە پاشەکەوتکراوەکان</span>
+      <button class="action-btn primary" onclick="saveCurrentWeekReport()" style="padding:6px 12px;font-size:12px">
+        💾 پاشەکەوتکردنی ئێستا
       </button>
     </div>
 
-    <div class="report-list" id="reportsList">
+    <div class="report-list">
       ${savedReports.length === 0 ? `
-        <div style="text-align:center;padding:40px;color:var(--text-secondary)">
-          <span style="font-size:48px;display:block;margin-bottom:16px">📭</span>
-          <p>هیچ ڕاپۆرتێک پاشەکەوت نەکراوە</p>
-          <button class="action-btn primary" onclick="createNewReport()" style="margin-top:16px;padding:12px 24px">
-            دروستکردنی یەکەم ڕاپۆرت
-          </button>
+        <div style="text-align:center;padding:30px;color:var(--text-secondary);background:var(--bg-secondary);border-radius:var(--radius-md)">
+          <span style="font-size:36px;display:block;margin-bottom:8px">📭</span>
+          <p style="font-size:13px">هیچ ڕاپۆرتێک پاشەکەوت نەکراوە</p>
         </div>
       ` : savedReports.map(report => `
         <div class="report-item">
           <div class="report-info" onclick="viewReport('${report.id}')">
-            <h4>${report.title || 'ڕاپۆرت'}</h4>
-            <p>${report.date || formatDate(new Date())} · ${report.count || 0} تۆمار</p>
+            <h4 style="font-size:13px">${report.title || 'ڕاپۆرت'}</h4>
+            <p style="font-size:11px">${report.date || ''} · ${report.count || 0} تۆمار</p>
           </div>
-          <div style="display:flex;gap:8px">
-            <span class="report-icon" onclick="downloadReport('${report.id}')">📥</span>
-            <span class="report-icon" onclick="deleteReport('${report.id}')">🗑️</span>
+          <div style="display:flex;gap:6px">
+            <button onclick="downloadReport('${report.id}')" style="background:var(--primary-light);color:var(--primary);border:none;border-radius:var(--radius-sm);padding:6px 10px;cursor:pointer;font-size:12px">📥 Excel</button>
+            <button onclick="deleteReport('${report.id}')" style="background:var(--danger-light);color:var(--danger);border:none;border-radius:var(--radius-sm);padding:6px 10px;cursor:pointer;font-size:12px">🗑️</button>
           </div>
         </div>
       `).join('')}
@@ -1577,6 +1616,47 @@ function buildWeeklyMatrix(records) {
   });
   return matrix;
 }
+
+// هەناردەی Excel بۆ ڕۆژی هەڵبژێردراو
+window.exportDailyExcel = function() {
+  if (todayRecords.length === 0) {
+    showToast('هیچ تۆمارێک نیە ئەمڕۆ', 'info');
+    return;
+  }
+  const dateStr = formatDateShort(selectedDate);
+  const matrix = buildWeeklyMatrix(todayRecords);
+  const hospitalTitle = isAdmin ? 'هەموو نەخۆشخانەکان' : currentHospitalName;
+  let csv = 'ڕاپۆرتی ڕۆژانە - ' + dateStr + ' - ' + hospitalTitle + '\n\n';
+  csv += 'نەخۆشی,' + AGE_GROUPS.map(a => a.label + ' نێر,' + a.label + ' مێ').join(',') + ',کۆی گشتی\n';
+  DISEASES.forEach(d => {
+    let row = d.name;
+    let total = 0;
+    AGE_GROUPS.forEach(a => {
+      const m = matrix[d.id][a.id].male;
+      const f = matrix[d.id][a.id].female;
+      row += ',' + m + ',' + f;
+      total += m + f;
+    });
+    row += ',' + total;
+    csv += row + '\n';
+  });
+  downloadFile(csv, 'daily-' + dateStr + '.csv');
+  showToast('✓ Excel ڕۆژانە هەناردە کرا', 'success');
+};
+
+// پاشەکەوتکردنی ڕاپۆرتی هەفتەی ئێستا
+window.saveCurrentWeekReport = async function() {
+  const { firstDay, lastDay } = getWeekRange(selectedDate);
+  const weekNum = getWeekNumber(selectedDate);
+  const weekDates = new Set();
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(firstDay); d.setDate(firstDay.getDate() + i);
+    weekDates.add(formatDateShort(d));
+  }
+  const records = monthRecords.filter(r => weekDates.has(r.date));
+  const title = 'هەفتە ' + weekNum + ' — ' + formatDateShort(firstDay) + ' - ' + formatDateShort(lastDay);
+  await saveReport(title, records);
+};
 
 window.exportCSV = function() {
   let records = currentPage === 'weekly' ? weekRecords :
@@ -1901,42 +1981,122 @@ async function saveReport(title, records) {
 window.viewReport = function(reportId) {
   const report = savedReports.find(r => r.id === reportId);
   if (!report) return;
-  
-  let detailsHtml = `<h3 style="margin-bottom:12px">${report.title}</h3>`;
-  detailsHtml += `<p style="margin-bottom:16px">ڕێکەوت: ${report.date} | کۆی تۆمار: ${report.count}</p>`;
-  
-  if (report.data && report.data.length > 0) {
-    detailsHtml += '<div class="log-list" style="max-height:300px">';
-    
-    // Group by disease
-    const diseaseCounts = {};
-    report.data.forEach(record => {
-      const diseaseName = record.diseaseName || record.disease;
-      diseaseCounts[diseaseName] = (diseaseCounts[diseaseName] || 0) + 1;
-    });
-    
-    Object.entries(diseaseCounts).forEach(([disease, count]) => {
-      detailsHtml += `
-        <div class="log-item">
-          <span>${disease}</span>
-          <span class="log-count">${count}</span>
-        </div>
-      `;
-    });
-    
-    detailsHtml += '</div>';
+
+  const records = report.data || [];
+  const matrix = buildWeeklyMatrix(records);
+
+  // Age headers
+  const ageHeadersHtml = AGE_GROUPS.map(a =>
+    `<th colspan="2" style="background:#0f6e56;color:white;padding:4px;font-size:10px;border:1px solid #ccc">${a.label}</th>`
+  ).join('');
+  const ageSubHeadersHtml = AGE_GROUPS.map(() =>
+    `<th style="background:#185fa5;color:white;padding:3px;font-size:9px;border:1px solid #ccc">ن</th>
+     <th style="background:#b33a6a;color:white;padding:3px;font-size:9px;border:1px solid #ccc">م</th>`
+  ).join('');
+
+  const diseaseRowsHtml = DISEASES.map(d => {
+    let totalM = 0, totalF = 0;
+    const cells = AGE_GROUPS.map(a => {
+      const c = matrix[d.id][a.id];
+      totalM += c.male; totalF += c.female;
+      return `<td style="text-align:center;padding:3px;border:1px solid #ddd;font-size:10px">${c.male||''}</td>
+              <td style="text-align:center;padding:3px;border:1px solid #ddd;font-size:10px">${c.female||''}</td>`;
+    }).join('');
+    if (totalM + totalF === 0) return '';
+    return `<tr>
+      <td style="padding:4px 6px;border:1px solid #ddd;font-weight:600;font-size:11px">${d.icon} ${d.name}</td>
+      ${cells}
+      <td style="text-align:center;font-weight:700;color:#185fa5;border:1px solid #ddd;font-size:11px">${totalM||''}</td>
+      <td style="text-align:center;font-weight:700;color:#b33a6a;border:1px solid #ddd;font-size:11px">${totalF||''}</td>
+      <td style="text-align:center;font-weight:800;color:#0f6e56;border:1px solid #ddd;font-size:11px">${totalM+totalF||''}</td>
+    </tr>`;
+  }).join('');
+
+  let gM = 0, gF = 0;
+  const totalCells = AGE_GROUPS.map(a => {
+    let aM = 0, aF = 0;
+    DISEASES.forEach(d => { aM += matrix[d.id][a.id].male; aF += matrix[d.id][a.id].female; });
+    gM += aM; gF += aF;
+    return `<td style="text-align:center;font-weight:700;background:#f0f9f5;border:1px solid #ddd;font-size:10px">${aM||''}</td>
+            <td style="text-align:center;font-weight:700;background:#f0f9f5;border:1px solid #ddd;font-size:10px">${aF||''}</td>`;
+  }).join('');
+
+  const html = `<!DOCTYPE html><html dir="rtl"><head>
+    <meta charset="UTF-8">
+    <style>
+      body { font-family: 'Segoe UI', Tahoma, sans-serif; margin: 10px; font-size: 11px; }
+      table { width: 100%; border-collapse: collapse; }
+      .header-box { background: #0f6e56; color: white; padding: 10px 16px; border-radius: 8px; margin-bottom: 10px; }
+      @media print { .no-print { display: none; } body { margin: 0; } }
+    </style>
+  </head><body>
+    <div class="header-box">
+      <div style="font-size:16px;font-weight:700">🏥 وەزارەتی تەندروستی — ${report.title}</div>
+      <div style="margin-top:6px;font-size:12px">
+        <span style="margin-left:24px">📍 ${currentHospitalName}</span>
+        <span style="margin-left:24px">📅 ${report.date}</span>
+        <span>کۆی تۆمار: ${report.count}</span>
+      </div>
+    </div>
+    <button class="no-print" onclick="window.print()" style="margin-bottom:10px;padding:8px 20px;background:#0f6e56;color:white;border:none;border-radius:6px;cursor:pointer;font-size:13px">🖨️ چاپکردن / PDF</button>
+    <table>
+      <thead>
+        <tr>
+          <th rowspan="2" style="background:#0a4d3b;color:white;padding:6px;border:1px solid #ccc;min-width:100px">نەخۆشی</th>
+          ${ageHeadersHtml}
+          <th style="background:#185fa5;color:white;padding:4px;font-size:10px;border:1px solid #ccc">کۆ ن</th>
+          <th style="background:#b33a6a;color:white;padding:4px;font-size:10px;border:1px solid #ccc">کۆ م</th>
+          <th style="background:#0f6e56;color:white;padding:4px;font-size:10px;border:1px solid #ccc">کۆی گشتی</th>
+        </tr>
+        <tr>${ageSubHeadersHtml}<th></th><th></th><th></th></tr>
+      </thead>
+      <tbody>
+        ${diseaseRowsHtml}
+        <tr style="background:#e8f5e9">
+          <td style="font-weight:800;padding:4px 6px;border:1px solid #ddd">کۆی گشتی</td>
+          ${totalCells}
+          <td style="text-align:center;font-weight:800;color:#185fa5;border:1px solid #ddd">${gM||''}</td>
+          <td style="text-align:center;font-weight:800;color:#b33a6a;border:1px solid #ddd">${gF||''}</td>
+          <td style="text-align:center;font-weight:900;color:#0f6e56;border:1px solid #ddd">${gM+gF||''}</td>
+        </tr>
+      </tbody>
+    </table>
+    <div style="margin-top:12px;font-size:10px;color:#888">دروستکراوە لە: ${new Date().toLocaleDateString('ar-IQ')}</div>
+  </body></html>`;
+
+  const win = window.open('', '_blank');
+  if (win) {
+    win.document.write(html);
+    win.document.close();
+  } else {
+    downloadFile(html, `report-${reportId}.html`);
   }
-  
-  showModal('پیشاندانی ڕاپۆرت', detailsHtml);
 };
 
 window.downloadReport = function(reportId) {
   const report = savedReports.find(r => r.id === reportId);
   if (!report || !report.data) return;
-  
-  const csv = convertToCSV(report.data);
-  downloadFile(csv, `report-${reportId}.csv`);
-  showToast('✓ داونلۆد کرا', 'success');
+
+  const matrix = buildWeeklyMatrix(report.data);
+  const rows = [];
+  const ageHeaders = [];
+  AGE_GROUPS.forEach(a => { ageHeaders.push(a.label + ' ن'); ageHeaders.push(a.label + ' م'); });
+  rows.push(['نەخۆشی', ...ageHeaders, 'کۆی نێر', 'کۆی مێ', 'کۆی گشتی']);
+  DISEASES.forEach(d => {
+    const row = [d.name];
+    let totalM = 0, totalF = 0;
+    AGE_GROUPS.forEach(a => {
+      row.push(matrix[d.id][a.id].male);
+      row.push(matrix[d.id][a.id].female);
+      totalM += matrix[d.id][a.id].male;
+      totalF += matrix[d.id][a.id].female;
+    });
+    row.push(totalM); row.push(totalF); row.push(totalM + totalF);
+    rows.push(row);
+  });
+  const csv = rows.map(r => r.join(',')).join('\n');
+  downloadFile(csv, `report-${report.title || reportId}.csv`);
+  showToast('✓ Excel داونلۆد کرا', 'success');
 };
 
 window.deleteReport = async function(reportId) {

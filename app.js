@@ -49,7 +49,6 @@ const AGE_GROUPS = [
 const USER_REGISTRY = [
   { username: 'admin',   password: 'admin123',  hospitalName: 'ئەدمین — هەموو نەخۆشخانەکان', isAdmin: true  },
   { username: 'fatih',   password: '123456',    hospitalName: 'مەڵبەندی تەندروستی شەهید فاتیح', isAdmin: false },
-  { username: 'hasan',   password: '123456',    hospitalName: 'مەڵبەندی تەندروستی شەهید امجد', isAdmin: false },
   // یوزەری تر زیاد بکە وەک ئەمە
 ];
 
@@ -1238,19 +1237,8 @@ window.addRecord = async function(diseaseId, ageGroupId, genderId) {
   };
 
   try {
-    const docRef = await addDoc(collection(db, 'daily_records'), record);
-    record.id = docRef.id;
-    todayRecords.push(record);
-    weekRecords.push(record);
-    monthRecords.push(record);
-    yearRecords.push(record);
-    allYearCache.push(record);
-
-    updateGenderCount(diseaseId, ageGroupId, genderId);
-    updateStats();
-    renderPage();
-
-    showToast(`✓ زیادکرا`, 'success');
+    await addDoc(collection(db, 'daily_records'), record);
+    // onSnapshot ئۆتۆماتیکی UI نوێ دەکاتەوە
   } catch (error) {
     console.error('Error adding record:', error);
     showToast('هەڵە لە تۆمارکردن', 'error');
@@ -1266,18 +1254,7 @@ window.decrementCount = async function(diseaseId, ageGroupId, genderId) {
 
   try {
     await deleteDoc(doc(db, 'daily_records', recordsToDelete[0].id));
-    const delId = recordsToDelete[0].id;
-    todayRecords = todayRecords.filter(r => r.id !== delId);
-    weekRecords = weekRecords.filter(r => r.id !== delId);
-    monthRecords = monthRecords.filter(r => r.id !== delId);
-    yearRecords = yearRecords.filter(r => r.id !== delId);
-    allYearCache = allYearCache.filter(r => r.id !== delId);
-
-    updateGenderCount(diseaseId, ageGroupId, genderId);
-    updateStats();
-    renderPage();
-
-    showToast('✓ سڕایەوە', 'success');
+    // onSnapshot ئۆتۆماتیکی UI نوێ دەکاتەوە
   } catch (error) {
     console.error('Error deleting record:', error);
     showToast('هەڵە لە سڕینەوە', 'error');

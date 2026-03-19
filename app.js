@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, where, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, where, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 // ==================== Firebase Configuration ====================
 const firebaseConfig = {
@@ -86,6 +86,10 @@ let isAdmin = false;
 let cachedYear = null;
 let cachedUserId = null;
 let allYearCache = [];
+let cacheTimestamp = null;
+const CACHE_TTL = 5 * 60 * 1000; // 5 خولەک
+
+let unsubscribeListener = null; // Real-time listener
 
 // ==================== Helper Functions ====================
 function formatDate(date) {
@@ -166,6 +170,18 @@ window.closeModal = function() {
   document.getElementById('modal').classList.remove('show');
 };
 
+// ==================== Force Refresh ====================
+window.forceRefresh = function() {
+  if (unsubscribeListener) {
+    unsubscribeListener();
+    unsubscribeListener = null;
+  }
+  cachedUserId = null;
+  allYearCache = [];
+  loadData();
+  showToast('🔄 داتا نوێ دەکرێتەوە...', 'info');
+};
+
 // ==================== Authentication ====================
 function login() {
   const username = document.getElementById('loginUsername')?.value?.trim();
@@ -189,6 +205,12 @@ function login() {
 }
 
 function logout() {
+  if (unsubscribeListener) {
+    unsubscribeListener();
+    unsubscribeListener = null;
+  }
+  allYearCache = [];
+  cachedUserId = null;
   currentUser = null;
   isAdmin = false;
   currentHospitalName = '';
@@ -198,8 +220,7 @@ function logout() {
 }
 
 // ==================== Data Loading ====================
-async function loadData() {
-  // نیشاندانی ناوی نەخۆشخانە فەوری
+function updateHeader() {
   if (currentUser) {
     const titleEl = document.querySelector('.app-title');
     if (titleEl) {
@@ -208,64 +229,72 @@ async function loadData() {
         currentUser.username + '</span>';
     }
   }
+}
+
+function applyFilters(docs) {
+  const todayStr = formatDateShort(selectedDate);
+  const { firstDay: wFirst, lastDay: wLast } = getWeekRange(selectedDate);
+  const weekStartStr = formatDateShort(wFirst);
+  const weekEndStr = formatDateShort(wLast);
+  todayRecords = docs.filter(r => r.date === todayStr);
+  weekRecords  = docs.filter(r => r.date >= weekStartStr && r.date <= weekEndStr);
+  monthRecords = docs.filter(r => r.month === selectedDate.getMonth() + 1);
+  yearRecords  = docs;
+}
+
+async function loadData() {
+  updateHeader();
 
   if (!currentUser) {
     renderPage();
     return;
   }
 
-  const year = selectedDate.getFullYear();
-  const todayStr = formatDateShort(selectedDate);
-  const { firstDay: wFirst, lastDay: wLast } = getWeekRange(selectedDate);
-  const weekStartStr = formatDateShort(wFirst);
-  const weekEndStr = formatDateShort(wLast);
-
-  // ئەگەر داتای ئەم ساڵە کاشێکراوە — پێویستی بە Firebase نیە
-  const cacheValid = cachedYear === year && cachedUserId === (currentUser?.uid || '');
-  if (cacheValid) {
-    todayRecords = allYearCache.filter(r => r.date === todayStr);
-    weekRecords  = allYearCache.filter(r => r.date >= weekStartStr && r.date <= weekEndStr);
-    monthRecords = allYearCache.filter(r => r.month === selectedDate.getMonth() + 1);
-    yearRecords  = allYearCache;
+  // ئەگەر Listener کاری کردووە — تەنها فلتەر نوێ بکەرەوە
+  if (unsubscribeListener && allYearCache.length >= 0 && cachedUserId === (currentUser?.uid || '')) {
+    applyFilters(allYearCache);
     updateStats();
     renderPage();
     return;
   }
 
+  // لیسنەری کۆنی بکوژێنەوە
+  if (unsubscribeListener) {
+    unsubscribeListener();
+    unsubscribeListener = null;
+  }
+
   isLoading = true;
   renderPage();
 
-  try {
-    let baseQ;
-    if (isAdmin) {
-      baseQ = query(collection(db, 'daily_records'), where('year', '==', year));
-    } else {
-      baseQ = query(collection(db, 'daily_records'), where('userId', '==', currentUser.uid), where('year', '==', year));
-    }
+  const year = selectedDate.getFullYear();
+  let baseQ;
+  if (isAdmin) {
+    baseQ = query(collection(db, 'daily_records'), where('year', '==', year));
+  } else {
+    baseQ = query(collection(db, 'daily_records'), where('userId', '==', currentUser.uid), where('year', '==', year));
+  }
 
-    const allYearDocs = (await getDocs(baseQ)).docs.map(d => ({ id: d.id, ...d.data() }));
-
-    // کاش بکە
-    allYearCache = allYearDocs;
-    cachedYear = year;
+  // Real-time listener — هەر کاتێک داتا گۆڕدرا ئۆتۆماتیکی نوێ دەبێتەوە
+  unsubscribeListener = onSnapshot(baseQ, async (snapshot) => {
+    allYearCache = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
     cachedUserId = currentUser?.uid || '';
 
-    todayRecords = allYearDocs.filter(r => r.date === todayStr);
-    weekRecords  = allYearDocs.filter(r => r.date >= weekStartStr && r.date <= weekEndStr);
-    monthRecords = allYearDocs.filter(r => r.month === selectedDate.getMonth() + 1);
-    yearRecords  = allYearDocs;
+    applyFilters(allYearCache);
 
-    await loadSavedReports();
+    if (isLoading) {
+      await loadSavedReports();
+      isLoading = false;
+    }
 
-    isLoading = false;
     updateStats();
     renderPage();
-  } catch (error) {
-    console.error('Error loading data:', error);
+  }, (error) => {
+    console.error('Listener error:', error);
     isLoading = false;
     showToast('هەڵە لە بارکردنی داتا', 'error');
     renderPage();
-  }
+  });
 }
 
 async function loadSavedReports() {
@@ -1247,7 +1276,7 @@ window.decrementCount = async function(diseaseId, ageGroupId, genderId) {
     updateStats();
     renderPage();
 
-    showToast('✓ کەمکرایەوە', 'success');
+    showToast('✓ سڕایەوە', 'success');
   } catch (error) {
     console.error('Error deleting record:', error);
     showToast('هەڵە لە سڕینەوە', 'error');

@@ -15,7 +15,10 @@
     <!-- Header -->
     <div class="app-header">
       <span class="app-title">🏥 تۆماری نەخۆشی</span>
-      <span class="app-date" id="currentDateDisplay"></span>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span class="app-date" id="currentDateDisplay"></span>
+        <button onclick="forceRefresh()" style="background:rgba(255,255,255,0.2);border:none;color:white;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center" title="نوێکردنەوە">🔄</button>
+      </div>
     </div>
 
     <!-- Navigation -->

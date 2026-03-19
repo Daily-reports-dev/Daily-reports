@@ -1105,90 +1105,151 @@ function renderMonthlyPage() {
 }
 
 function renderAnalyticsPage() {
-  // Last 30 days data
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-  
-  const recentRecords = monthRecords.filter(r => {
-    const recordDate = new Date(r.date);
-    return recordDate >= thirtyDaysAgo;
-  });
-  
-  const total = recentRecords.length;
-  const maleCount = recentRecords.filter(r => r.gender === 'male').length;
-  const femaleCount = recentRecords.filter(r => r.gender === 'female').length;
-  const malePercent = total > 0 ? Math.round(maleCount/total*100) : 0;
-  const femalePercent = total > 0 ? Math.round(femaleCount/total*100) : 0;
-  
-  // Disease stats
-  const diseaseStats = {};
-  recentRecords.forEach(record => {
-    if (!diseaseStats[record.disease]) {
-      const disease = DISEASES.find(d => d.id === record.disease);
-      if (!disease) return;
-      diseaseStats[record.disease] = {
-        disease: disease,
-        count: 0
-      };
+  const records = weekRecords; // بەپێی هەفتەی هەڵبژێردراو
+  const total = records.length;
+  const maleCount = records.filter(r => r.gender === 'male').length;
+  const femaleCount = records.filter(r => r.gender === 'female').length;
+
+  // --- کارتەکانی نەخۆشی بە تەمەن/ڕەگەز ---
+  const diseaseCardsHtml = DISEASES.map(d => {
+    const dRecs = records.filter(r => r.disease === d.id);
+    if (dRecs.length === 0) return '';
+    let ageRows = '';
+    AGE_GROUPS.forEach(ag => {
+      const m = dRecs.filter(r => r.ageGroup === ag.id && r.gender === 'male').length;
+      const f = dRecs.filter(r => r.ageGroup === ag.id && r.gender === 'female').length;
+      if (m > 0 || f > 0) {
+        ageRows += '<td style="text-align:center;padding:2px 4px;font-size:11px;color:var(--male);font-weight:600">' + m + '</td>';
+      } else {
+        ageRows += '<td style="text-align:center;padding:2px 4px;font-size:11px;color:var(--text-tertiary)">0</td>';
+      }
+    });
+    let ageRowsF = '';
+    AGE_GROUPS.forEach(ag => {
+      const f = dRecs.filter(r => r.ageGroup === ag.id && r.gender === 'female').length;
+      ageRowsF += '<td style="text-align:center;padding:2px 4px;font-size:11px;color:var(--female);font-weight:600">' + f + '</td>';
+    });
+    return '<div style="background:white;border-radius:var(--radius-md);border:1px solid var(--border-light);overflow:hidden;margin-bottom:8px">' +
+      '<div style="background:' + d.color + '15;padding:8px 10px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border-light)">' +
+        '<span style="font-weight:700;font-size:13px">' + d.icon + ' ' + d.name + '</span>' +
+        '<span style="background:' + d.color + ';color:white;padding:2px 10px;border-radius:20px;font-size:12px;font-weight:700">' + dRecs.length + ' حاڵەت</span>' +
+      '</div>' +
+      '<div style="overflow-x:auto">' +
+        '<table style="width:100%;border-collapse:collapse">' +
+          '<thead>' +
+            '<tr>' +
+              '<th style="padding:4px 6px;font-size:10px;color:var(--text-secondary);text-align:right;white-space:nowrap">ڕەگەز</th>' +
+              AGE_GROUPS.map(ag => '<th style="text-align:center;padding:4px;font-size:10px;color:var(--text-secondary);white-space:nowrap">' + ag.label + '</th>').join('') +
+            '</tr>' +
+          '</thead>' +
+          '<tbody>' +
+            '<tr style="background:var(--male-light)">' +
+              '<td style="padding:4px 6px;font-size:11px;font-weight:600;color:var(--male)">👨 نێر</td>' +
+              ageRows +
+            '</tr>' +
+            '<tr style="background:var(--female-light)">' +
+              '<td style="padding:4px 6px;font-size:11px;font-weight:600;color:var(--female)">👩 مێ</td>' +
+              ageRowsF +
+            '</tr>' +
+          '</tbody>' +
+        '</table>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+
+  // --- جەدوەلی نەخۆشخانەکان (بۆ ئەدمین) ---
+  let hospitalTableHtml = '';
+  if (isAdmin) {
+    const hospitals = USER_REGISTRY.filter(u => !u.isAdmin);
+    let rows = '';
+    hospitals.forEach(h => {
+      const hRecs = records.filter(r => r.userId === h.username);
+      if (hRecs.length === 0) return;
+      let diseaseCells = DISEASES.slice(0,5).map(d => {
+        const c = hRecs.filter(r => r.disease === d.id).length;
+        return '<td style="text-align:center;padding:6px 4px;font-size:12px">' + (c || '-') + '</td>';
+      }).join('');
+      rows += '<tr style="border-bottom:1px solid var(--border-light)">' +
+        '<td style="padding:8px 10px;font-size:12px;font-weight:600">' + h.hospitalName + '</td>' +
+        '<td style="text-align:center;padding:6px 8px;font-size:13px;font-weight:700;color:var(--primary)">' + hRecs.length + '</td>' +
+        diseaseCells +
+      '</tr>';
+    });
+    if (rows) {
+      hospitalTableHtml = '<div class="summary-card" style="margin-bottom:12px">' +
+        '<h4 style="margin-bottom:10px;font-size:13px">🏥 خلاصەی نەخۆشخانەکان</h4>' +
+        '<div style="overflow-x:auto">' +
+          '<table style="width:100%;border-collapse:collapse">' +
+            '<thead style="background:var(--bg-secondary)">' +
+              '<tr>' +
+                '<th style="padding:8px 10px;text-align:right;font-size:11px;color:var(--text-secondary)">نەخۆشخانە</th>' +
+                '<th style="text-align:center;padding:8px 4px;font-size:11px;color:var(--text-secondary)">کۆی گشتی</th>' +
+                DISEASES.slice(0,5).map(d => '<th style="text-align:center;padding:8px 4px;font-size:10px;color:var(--text-secondary);white-space:nowrap">' + d.icon + '</th>').join('') +
+              '</tr>' +
+            '</thead>' +
+            '<tbody>' + rows + '</tbody>' +
+          '</table>' +
+        '</div>' +
+      '</div>';
     }
-    diseaseStats[record.disease].count++;
-  });
-  
-  const topDiseases = Object.values(diseaseStats).sort((a, b) => b.count - a.count).slice(0, 5);
+  }
 
-  return `
-    <div class="summary-card">
-      <h4 style="margin-bottom:12px">📊 شیکردنەوەی ٣٠ ڕۆژی ڕابردوو</h4>
-      <p>کۆی گشتی: <strong>${total}</strong> حاڵەت</p>
-      <p>تێکڕای ڕۆژانە: <strong>${Math.round(total / 30)}</strong></p>
-    </div>
+  // --- چارتی تەمەنەکان بە Canvas ---
+  const ageLabels = AGE_GROUPS.map(ag => ag.label);
+  const ageMale = AGE_GROUPS.map(ag => records.filter(r => r.ageGroup === ag.id && r.gender === 'male').length);
+  const ageFemale = AGE_GROUPS.map(ag => records.filter(r => r.ageGroup === ag.id && r.gender === 'female').length);
 
-    <div class="dashboard-grid" style="margin-bottom:16px">
-      <div class="dashboard-card" style="background:var(--male-light)">
-        <div class="dashboard-icon">👨</div>
-        <div class="dashboard-value">${maleCount}</div>
-        <div class="dashboard-label">نێر ${malePercent}%</div>
-      </div>
-      <div class="dashboard-card" style="background:var(--female-light)">
-        <div class="dashboard-icon">👩</div>
-        <div class="dashboard-value">${femaleCount}</div>
-        <div class="dashboard-label">مێ ${femalePercent}%</div>
-      </div>
-    </div>
+  setTimeout(() => {
+    const ctx = document.getElementById('ageChart');
+    if (!ctx) return;
+    if (ctx._chartInstance) ctx._chartInstance.destroy();
+    ctx._chartInstance = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: ageLabels,
+        datasets: [
+          { label: 'نێر', data: ageMale, backgroundColor: '#185fa5cc', borderRadius: 4 },
+          { label: 'مێ',  data: ageFemale, backgroundColor: '#b33a6acc', borderRadius: 4 }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } },
+        scales: { x: { grid: { display: false } }, y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+      }
+    });
+  }, 100);
 
-    <div class="summary-card">
-      <h4 style="margin-bottom:12px">🔝 پێنج نەخۆشی باو</h4>
-      <div class="log-list">
-        ${topDiseases.map((disease, index) => `
-          <div class="log-item">
-            <div class="log-item-info">
-              <span style="width:24px;font-weight:700">#${index+1}</span>
-              <span class="log-dot" style="background:${disease.disease.color}"></span>
-              <span>${disease.disease.icon} ${disease.disease.name}</span>
-            </div>
-            <span class="log-count">${disease.count}</span>
-          </div>
-        `).join('')}
-      </div>
-    </div>
+  return '<div>' +
+    // سەرەوە: ژمارەکان
+    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px">' +
+      '<div class="summary-card" style="margin-bottom:0;text-align:center;padding:10px">' +
+        '<div style="font-size:22px;font-weight:800;color:var(--primary)">' + total + '</div>' +
+        '<div style="font-size:11px;color:var(--text-secondary)">کۆی گشتی</div>' +
+      '</div>' +
+      '<div class="summary-card" style="margin-bottom:0;text-align:center;padding:10px;background:var(--male-light)">' +
+        '<div style="font-size:22px;font-weight:800;color:var(--male)">' + maleCount + '</div>' +
+        '<div style="font-size:11px;color:var(--text-secondary)">👨 نێر</div>' +
+      '</div>' +
+      '<div class="summary-card" style="margin-bottom:0;text-align:center;padding:10px;background:var(--female-light)">' +
+        '<div style="font-size:22px;font-weight:800;color:var(--female)">' + femaleCount + '</div>' +
+        '<div style="font-size:11px;color:var(--text-secondary)">👩 مێ</div>' +
+      '</div>' +
+    '</div>' +
 
-    <div class="summary-card">
-      <h4 style="margin-bottom:12px">📊 پێکهاتەی تەمەنەکان</h4>
-      <div class="log-list">
-        ${AGE_GROUPS.map(age => {
-          const count = recentRecords.filter(r => r.ageGroup === age.id).length;
-          if (count === 0) return '';
-          const percentage = total > 0 ? Math.round(count/total*100) : 0;
-          return `
-            <div class="log-item">
-              <span>${age.label} ${age.sub}</span>
-              <span class="log-count">${count} (${percentage}%)</span>
-            </div>
-          `;
-        }).join('')}
-      </div>
-    </div>
-  `;
+    // جەدوەلی نەخۆشخانەکان
+    hospitalTableHtml +
+
+    // کارتەکانی نەخۆشی
+    '<div style="margin-bottom:8px;font-size:13px;font-weight:700;color:var(--primary)">📋 تەفسیلی نەخۆشییەکان</div>' +
+    (diseaseCardsHtml || '<div style="text-align:center;padding:20px;color:var(--text-secondary)">هیچ تۆمارێک نیە</div>') +
+
+    // چارتی تەمەن
+    '<div class="summary-card">' +
+      '<h4 style="margin-bottom:10px;font-size:13px">📊 پێکهاتەی تەمەنەکان</h4>' +
+      '<div style="height:180px"><canvas id="ageChart"></canvas></div>' +
+    '</div>' +
+  '</div>';
 }
 
 function renderReportsPage() {

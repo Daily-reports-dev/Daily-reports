@@ -645,7 +645,7 @@ function renderWeeklyPage() {
     const femaleCount = dayRecords.filter(r => r.gender === 'female').length;
     
     weekHtml += `
-      <div class="week-day ${dayTotal > 0 ? 'has-data' : ''}" onclick="showDayDetails('${dateStr}')" style="cursor:pointer">
+      <div class="week-day ${dayTotal > 0 ? 'has-data' : ''}" onclick="${dayTotal > 0 ? `editDayRecords('${dateStr}')` : `showToast('هیچ تۆمارێک نیە', 'info')`}" style="cursor:pointer">
         <div style="font-size:14px;font-weight:600;color:var(--primary)">${displayDate}</div>
         ${dayTotal > 0 ? 
           `<div style="display:flex;flex-direction:column;align-items:center;gap:2px;margin-top:4px">
@@ -808,42 +808,43 @@ window.showDayDetails = function(dateStr) {
   });
   
   let detailsHtml = `
-    <div style="margin-bottom:12px;display:flex;justify-content:space-between;align-items:center">
+    <div style="margin-bottom:16px">
       <h4 style="color:var(--primary)">${day}/${month}/${year}</h4>
-      <span id="dayModalTotal" style="background:var(--primary-light);color:var(--primary);padding:2px 10px;border-radius:20px;font-size:13px;font-weight:700">${dayRecords.length} حاڵەت</span>
+      <p style="font-size:14px">کۆی گشتی: <strong>${dayRecords.length}</strong> حاڵەت</p>
     </div>
-
-    <!-- Quick Add Section -->
-    <div style="background:var(--bg-secondary);border-radius:var(--radius-md);padding:10px;margin-bottom:12px;border:1px solid var(--border-light)">
-      <div style="font-size:12px;font-weight:700;color:var(--primary);margin-bottom:8px">⚡ زیادکردنی نەخۆشی نوێ</div>
-      <select id="dayModalDisease" style="margin-bottom:6px;padding:8px;font-size:13px">
-        ${DISEASES.map(d => `<option value="${d.id}">${d.icon} ${d.name}</option>`).join('')}
-      </select>
-      <select id="dayModalAge" style="margin-bottom:6px;padding:8px;font-size:13px">
-        ${AGE_GROUPS.map(a => `<option value="${a.id}">${a.label} — ${a.sub}</option>`).join('')}
-      </select>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
-        <button class="action-btn primary" style="font-size:12px;padding:8px" onclick="addRecordFromModal('${dateStr}', 'male')">👨 نێر +</button>
-        <button class="action-btn" style="font-size:12px;padding:8px;background:var(--female-light);color:var(--female);border-color:var(--female)" onclick="addRecordFromModal('${dateStr}', 'female')">👩 مێ +</button>
-        <button class="action-btn" style="font-size:12px;padding:8px" onclick="editDayRecords('${dateStr}');closeModal()">✏️ وردتر</button>
+    
+    <div style="margin-bottom:16px">
+      <h5 style="margin-bottom:8px">📊 بەپێی نەخۆشی:</h5>
+      <div style="max-height:200px;overflow-y:auto">
+        ${Object.values(diseaseStats).map(stat => `
+          <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border-light)">
+            <span><span class="log-dot" style="background:${stat.disease.color};display:inline-block;margin-left:6px"></span> ${stat.disease.icon} ${stat.disease.name}</span>
+            <span>
+              <span style="color:var(--male);margin-left:8px">👨 ${stat.male}</span>
+              <span style="color:var(--female)">👩 ${stat.female}</span>
+            </span>
+          </div>
+        `).join('')}
       </div>
     </div>
     
-    <div style="margin-bottom:10px">
-      <div style="font-size:12px;font-weight:700;margin-bottom:6px">📊 بەپێی نەخۆشی:</div>
-      <div id="dayModalDiseaseList" style="max-height:160px;overflow-y:auto">
-        ${Object.values(diseaseStats).length === 0 ? '<div style="text-align:center;padding:12px;color:var(--text-secondary)">هیچ تۆمارێک نیە</div>' :
-          Object.values(diseaseStats).map(stat => `
-            <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border-light)">
-              <span style="font-size:13px"><span class="log-dot" style="background:${stat.disease.color};display:inline-block;width:8px;height:8px;border-radius:50%;margin-left:6px"></span>${stat.disease.icon} ${stat.disease.name}</span>
-              <span style="font-size:13px">
-                <span style="color:var(--male);margin-left:8px">👨 ${stat.male}</span>
-                <span style="color:var(--female)">👩 ${stat.female}</span>
-              </span>
-            </div>
-          `).join('')
-        }
+    <div>
+      <h5 style="margin-bottom:8px">📊 بەپێی تەمەن:</h5>
+      <div style="max-height:200px;overflow-y:auto">
+        ${Object.values(ageStats).filter(age => age.male > 0 || age.female > 0).map(age => `
+          <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border-light)">
+            <span>تەمەن ${age.label}</span>
+            <span>
+              <span style="color:var(--male);margin-left:8px">👨 ${age.male}</span>
+              <span style="color:var(--female)">👩 ${age.female}</span>
+            </span>
+          </div>
+        `).join('')}
       </div>
+    </div>
+    
+    <div style="display:flex;gap:8px;margin-top:16px">
+      <button class="action-btn" style="flex:1" onclick="editDayRecords('${dateStr}')">✏️ دەستکاری</button>
     </div>
   `;
   
@@ -903,7 +904,7 @@ function renderMonthlyPage() {
     const count = dailyTotals[dateStr] || 0;
     
     monthHtml += `
-      <div class="week-day ${count > 0 ? 'has-data' : ''}" onclick="showDayDetails('${dateStr}')" style="cursor:pointer">
+      <div class="week-day ${count > 0 ? 'has-data' : ''}" onclick="${count > 0 ? `editDayRecords('${dateStr}')` : `showToast('هیچ تۆمارێک نیە', 'info')`}" style="cursor:pointer">
         <div style="font-size:14px;font-weight:600">${d}</div>
         ${count > 0 ? 
           `<div style="font-size:10px;background:var(--primary-light);color:var(--primary);padding:2px 4px;border-radius:10px;margin-top:2px">${count}</div>` : 
@@ -1314,68 +1315,6 @@ window.editDayRecords = function(dateStr) {
   loadData();
   
   showToast(`ڕۆژ ${formatDate(selectedDate)}`, 'success');
-};
-
-// ==================== Add from Day Modal ====================
-window.addRecordFromModal = async function(dateStr, genderId) {
-  if (!currentUser) {
-    showToast('تکایە سەرەتا بچۆرە ژوورەوە', 'error');
-    return;
-  }
-
-  const diseaseId = document.getElementById('dayModalDisease')?.value;
-  const ageGroupId = document.getElementById('dayModalAge')?.value;
-
-  if (!diseaseId || !ageGroupId) {
-    showToast('تکایە هەموو خانەکان پڕبکەوە', 'error');
-    return;
-  }
-
-  const disease = DISEASES.find(d => d.id === diseaseId);
-  const ageGroup = AGE_GROUPS.find(a => a.id === ageGroupId);
-  if (!disease || !ageGroup) return;
-
-  // Parse the target date from the modal's dateStr
-  const parts = dateStr.split('-');
-  const targetDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-
-  const record = {
-    disease: diseaseId,
-    diseaseName: disease.name,
-    ageGroup: ageGroupId,
-    ageLabel: ageGroup.label,
-    gender: genderId,
-    date: dateStr,
-    week: getWeekNumber(targetDate),
-    month: targetDate.getMonth() + 1,
-    year: targetDate.getFullYear(),
-    savedAt: new Date().toISOString(),
-    userId: currentUser.uid,
-    userName: currentUser.displayName,
-    hospitalName: currentHospitalName
-  };
-
-  try {
-    const docRef = await addDoc(collection(db, 'daily_records'), record);
-    record.id = docRef.id;
-
-    // Push into all caches
-    monthRecords.push(record);
-    yearRecords.push(record);
-    if (record.date === formatDateShort(selectedDate)) {
-      todayRecords.push(record);
-    }
-    weekRecords.push(record);
-
-    updateStats();
-
-    // Refresh the modal in-place without closing it
-    showDayDetails(dateStr);
-    showToast(`✓ زیادکرا`, 'success');
-  } catch (error) {
-    console.error('Error adding record from modal:', error);
-    showToast('هەڵە لە تۆمارکردن', 'error');
-  }
 };
 
 // ==================== Export Functions ====================

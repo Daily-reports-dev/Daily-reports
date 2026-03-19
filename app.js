@@ -49,6 +49,7 @@ const AGE_GROUPS = [
 const USER_REGISTRY = [
   { username: 'admin',   password: 'admin123',  hospitalName: 'ئەدمین — هەموو نەخۆشخانەکان', isAdmin: true  },
   { username: 'fatih',   password: '123456',    hospitalName: 'مەڵبەندی تەندروستی شەهید فاتیح', isAdmin: false },
+  { username: 'hasan',   password: '123456',    hospitalName: 'مەڵبەندی تەندروستی شەهید امجد', isAdmin: false },
   // یوزەری تر زیاد بکە وەک ئەمە
 ];
 

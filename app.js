@@ -645,7 +645,7 @@ function renderWeeklyPage() {
     const femaleCount = dayRecords.filter(r => r.gender === 'female').length;
     
     weekHtml += `
-      <div class="week-day ${dayTotal > 0 ? 'has-data' : ''}" onclick="${dayTotal > 0 ? `editDayRecords('${dateStr}')` : `showToast('هیچ تۆمارێک نیە', 'info')`}" style="cursor:pointer">
+      <div class="week-day ${dayTotal > 0 ? 'has-data' : ''}" onclick="editDayRecords('${dateStr}')" style="cursor:pointer">
         <div style="font-size:14px;font-weight:600;color:var(--primary)">${displayDate}</div>
         ${dayTotal > 0 ? 
           `<div style="display:flex;flex-direction:column;align-items:center;gap:2px;margin-top:4px">
@@ -763,10 +763,7 @@ window.showDayDetails = function(dateStr) {
   }
   const dayRecords = sourceRecords.filter(r => r.date === dateStr);
   
-  if (dayRecords.length === 0) {
-    showToast('هیچ تۆمارێک نیە', 'info');
-    return;
-  }
+
   
   const date = new Date(dateStr);
   const formattedDate = formatDate(date);
@@ -904,7 +901,7 @@ function renderMonthlyPage() {
     const count = dailyTotals[dateStr] || 0;
     
     monthHtml += `
-      <div class="week-day ${count > 0 ? 'has-data' : ''}" onclick="${count > 0 ? `editDayRecords('${dateStr}')` : `showToast('هیچ تۆمارێک نیە', 'info')`}" style="cursor:pointer">
+      <div class="week-day ${count > 0 ? 'has-data' : ''}" onclick="editDayRecords('${dateStr}')" style="cursor:pointer">
         <div style="font-size:14px;font-weight:600">${d}</div>
         ${count > 0 ? 
           `<div style="font-size:10px;background:var(--primary-light);color:var(--primary);padding:2px 4px;border-radius:10px;margin-top:2px">${count}</div>` : 
